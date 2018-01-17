@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-// import ReactDOM from 'react-dom';
 import * as d3 from 'd3';
 
 
@@ -31,32 +30,36 @@ const setPolygonSelectedState = (polygon, selected, config) => {
 
 class Radar extends Component {
 
+  static defaultProps = {
+    width: 500,
+    height: 500,
+    margin: { top: 50, right: 50, bottom: 50, left: 50 },
+    axes: true,
+    axisLabel: true,
+    levels: 4,
+    levelLabel: true,
+    maxValue: 1,
+    labelOffset: 1.1,
+    wrapWidth: 60,
+    opacityArea: 0.2,
+    dotRadius: 4,
+    opacityCircles: 0.1,
+    strokeWidth: 1,
+    color: d3.scaleOrdinal(d3.schemeCategory10)
+  }
+
   constructor() {
     super();
 
     this.state = {
-      done: false
+      chartRendered: false
     };
 
-    this.config = {
-      width: 600,
-      height: 600,
-      margin: { top: 50, right: 50, bottom: 50, left: 50 },
-      levels: 4,
-      maxValue: 1,
-      labelOffset: 1.1,
-      wrapWidth: 60,
-      opacityArea: 0.2,
-      dotRadius: 4,
-      opacityCircles: 0.1,
-      strokeWidth: 1,
-      roundStrokes: false,
-      color: d3.scaleOrdinal(d3.schemeCategory10)
-    };
+    this.config = {};
   }
 
   componentDidMount() {
-    if (this.props.data !== null) {
+    if (this.props.data.length) {
       this.setState({
         chartRendered: true
       }, () => {
@@ -66,7 +69,7 @@ class Radar extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.data !== null && this.props.data !== nextProps.data) {
+    if (nextProps.data.length && this.props.data !== nextProps.data) {
       if (!this.state.chartRendered) {
         this.setState({
           chartRendered: true
@@ -82,10 +85,6 @@ class Radar extends Component {
       }
     }
   }
-
-  // shouldComponentUpdate() {
-  //   return false;
-  // }
 
   wrapText = (text, width) => {
     text.each(function() {
@@ -117,71 +116,73 @@ class Radar extends Component {
   renderAxes = () => {
     const axisGrid = this.outerGroup.append("g")
       .attr("class", "axis__wrapper");
+    if (this.props.levels > 0) {
+      //Draw the background circles
+      axisGrid.selectAll(".axis__level")
+        .data(d3.range(1, (this.props.levels + 1)).reverse())
+          .enter()
+        .append("circle")
+        .attr("class", "axis__circle")
+        .attr("r", (d, i) => this.radius / this.props.levels * d)
+        .style("fill", "#CDCDCD")
+        .style("stroke", "#CDCDCD")
+        .style("fill-opacity", this.props.opacityCircles)
+        .style("filter" , "url(#glow)");
 
-    //Draw the background circles
-    axisGrid.selectAll(".axis__level")
-      .data(d3.range(1, (this.config.levels + 1)).reverse())
-        .enter()
-      .append("circle")
-      .attr("class", "axis__circle")
-      .attr("r", (d, i) => this.radius / this.config.levels * d)
-      .style("fill", "#CDCDCD")
-      .style("stroke", "#CDCDCD")
-      .style("fill-opacity", this.config.opacityCircles)
-      .style("filter" , "url(#glow)");
+        if (this.props.levelLabel) {
+          //Text indicating at what % each level is
+          axisGrid.selectAll(".axisLabel")
+            .data(d3.range(1, (this.props.levels + 1)).reverse())
+              .enter()
+            .append("text")
+            .attr("class", "axis__label")
+            .attr("x", 4)
+            .attr("y", d => -d * this.radius / this.props.levels)
+            .attr("dy", "0.4em")
+            .style("font-size", "10px")
+            .attr("fill", "#737373")
+            .text((d, i) => this.Format(this.maxValue * d / this.props.levels));
+        }
+      }
 
-    //Text indicating at what % each level is
-    axisGrid.selectAll(".axisLabel")
-      .data(d3.range(1, (this.config.levels + 1)).reverse())
-        .enter()
-      .append("text")
-      .attr("class", "axis__label")
-      .attr("x", 4)
-      .attr("y", d => -d * this.radius / this.config.levels)
-      .attr("dy", "0.4em")
-      .style("font-size", "10px")
-      .attr("fill", "#737373")
-      .text((d,i) => this.Format(this.maxValue * d / this.config.levels));
+      if (this.props.axes && this.props.data.length) {
+        const axis = axisGrid.selectAll(".axis")
+          .data(this.allAxis)
+            .enter()
+          .append("g")
+          .attr("class", "axis");
 
-    const axis = axisGrid.selectAll(".axis")
-      .data(this.allAxis)
-        .enter()
-      .append("g")
-      .attr("class", "axis");
+        //Append the lines
+        axis.append("line")
+          .attr("x1", 0)
+          .attr("y1", 0)
+          .attr("x2", (d, i) => this.scaleRadial(this.maxValue * 1.1) * Math.cos(this.angleSlice * i - Math.PI / 2))
+          .attr("y2", (d, i) => this.scaleRadial(this.maxValue * 1.1) * Math.sin(this.angleSlice * i - Math.PI / 2))
+          .attr("class", "line")
+          .style("stroke", "white")
+          .style("stroke-width", "2px");
 
-    //Append the lines
-    axis.append("line")
-      .attr("x1", 0)
-      .attr("y1", 0)
-      .attr("x2", (d, i) => this.scaleRadial(this.maxValue * 1.1) * Math.cos(this.angleSlice * i - Math.PI / 2))
-      .attr("y2", (d, i) => this.scaleRadial(this.maxValue * 1.1) * Math.sin(this.angleSlice * i - Math.PI / 2))
-      .attr("class", "line")
-      .style("stroke", "white")
-      .style("stroke-width", "2px");
-
-    //Append the labels at each axis
-    axis.append("text")
-      .attr("class", "legend")
-      .style("font-size", "11px")
-      .attr("text-anchor", "middle")
-      .attr("dy", "0.35em")
-      .attr("x", (d, i) => (this.scaleRadial(this.maxValue * this.config.labelOffset) * Math.cos(this.angleSlice * i - Math.PI / 2)))
-      .attr("y", (d, i) => (this.scaleRadial(this.maxValue * this.config.labelOffset) * Math.sin(this.angleSlice * i - Math.PI / 2)))
-      .text(d => d)
-      .call(this.wrapText, this.config.wrapWidth);
+        if (this.props.axisLabel) {
+          //Append the labels at each axis
+          axis.append("text")
+            .attr("class", "legend")
+            .style("font-size", "11px")
+            .attr("text-anchor", "middle")
+            .attr("dy", "0.35em")
+            .attr("x", (d, i) => (this.scaleRadial(this.maxValue * this.props.labelOffset) * Math.cos(this.angleSlice * i - Math.PI / 2)))
+            .attr("y", (d, i) => (this.scaleRadial(this.maxValue * this.props.labelOffset) * Math.sin(this.angleSlice * i - Math.PI / 2)))
+            .text(d => d)
+            .call(this.wrapText, this.props.wrapWidth);
+        }
+      }
   }
 
   renderPolygons = (data, config) => {
     // The radial line function
-    const radarLine = d3.radialLine()
-      .radius(d => this.scaleRadial(d.value))
-      .angle((d,i) => i * this.angleSlice);
-
-    if (this.config.roundStrokes) {
-      radarLine.curve(d3.curveCardinalClosed);
-    } else {
-      radarLine.curve(d3.curveLinearClosed);
-    }
+    // const radarLine = d3.radialLine()
+    //   .radius(d => this.scaleRadial(d.value))
+    //   .angle((d,i) => i * this.angleSlice)
+    //   .curve(d3.curveLinearClosed);
 
     // Build the polygons and points
     this.polygonWrapper = this.outerGroup.selectAll(".polygon-wrapper")
@@ -196,10 +197,10 @@ class Radar extends Component {
           }).join(" ");
         })
         .attr("class", "polygon__area")
-        .attr("stroke", (d, i) => this.config.color(i))
-        .attr("stroke-width", this.config.strokeWidth)
-        .style("fill", (d, i) => this.config.color(i))
-        .style("fill-opacity", this.config.opacityArea)
+        .attr("stroke", (d, i) => d.color || this.props.color(i))
+        .attr("stroke-width", this.props.strokeWidth)
+        .style("fill", (d, i) => d.color || this.props.color(i))
+        .style("fill-opacity", this.props.opacityArea)
         .style("filter" , "url(#glow)")
         .on("click", function(d, i) {
           setPolygonSelectedState(this, !this._selected, config);
@@ -211,7 +212,7 @@ class Radar extends Component {
             return d.values.map(val => {
               return {
                 value: val.value,
-                color: config.color(i)
+                color: d.color || config.color(i)
               };
             });
           }).enter()
@@ -249,13 +250,13 @@ class Radar extends Component {
   renderChart = (data) => {
     d3.select(this.chart).select("svg").remove();
 
-    this.maxValue = Math.max(this.config.maxValue, d3.max(data, item => {
+    this.maxValue = Math.max(this.props.maxValue, d3.max(data, item => {
       return d3.max(item.values, value => value.value);
     }));
 
     // NOTE: data[0] means currently this code assumes all entries have the same axis data
     this.allAxis = (data[0].values.map(function(val) { return val.label } ));  //Names of each axis
-    this.radius = Math.min( (this.config.width / 2), (this.config.height / 2) );  //Radius of the outermost circle
+    this.radius = Math.min( (this.props.width / 2), (this.props.height / 2) );  //Radius of the outermost circle
     this.Format = d3.format('.0%');  //Percentage formatting
     this.angleSlice = (Math.PI * 2) / this.allAxis.length;  //The width in radians of each "slice"
 
@@ -263,17 +264,21 @@ class Radar extends Component {
       .range([0, this.radius])
       .domain([0, this.maxValue]);
 
+    // Use config to pass along items needed for functions that lose the component level scope
     this.config.scaleRadial = this.scaleRadial;
     this.config.angleSlice = this.angleSlice;
     this.config.Format = this.Format;
+    this.config.opacityArea = this.props.opacityArea;
+    this.config.dotRadius = this.props.dotRadius;
+    this.config.color = this.props.color;
 
     this.svg = d3.select(this.chart).append("svg")
-      .attr("width",  this.config.width + this.config.margin.left + this.config.margin.right)
-      .attr("height", this.config.height + this.config.margin.top + this.config.margin.bottom)
+      .attr("width",  this.props.width + this.props.margin.left + this.props.margin.right)
+      .attr("height", this.props.height + this.props.margin.top + this.props.margin.bottom)
       .attr("class", "radar");
 
     this.outerGroup = this.svg.append("g")
-      .attr("transform", "translate(" + ((this.config.width / 2) + this.config.margin.left) + "," + ((this.config.height / 2) + this.config.margin.top) + ")");
+      .attr("transform", "translate(" + ((this.props.width / 2) + this.props.margin.left) + "," + ((this.props.height / 2) + this.props.margin.top) + ")");
 
     const filter = this.outerGroup.append('defs').append('filter').attr('id','glow');
     filter.append('feGaussianBlur').attr('stdDeviation','2.5').attr('result','coloredBlur');
@@ -344,7 +349,7 @@ class Radar extends Component {
 
   render() {
     return(
-      <div ref={node => this.chart = node}></div>
+      <div ref={node => this.chart = node} className="chart--radar"></div>
     )
   }
 }

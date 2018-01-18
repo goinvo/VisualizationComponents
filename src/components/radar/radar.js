@@ -1,10 +1,11 @@
 import React, { Component } from 'react';
+import ReactDOM from 'react-dom';
 import * as d3 from 'd3';
 
 
 const setPolygonSelectedState = (polygon, selected, config) => {
   if (selected) {
-    d3.selectAll(".polygon__area")
+    d3.selectAll(config.chart.querySelectorAll(".polygon__area"))
       .each(function() {
         this._selected = false;
       })
@@ -20,7 +21,7 @@ const setPolygonSelectedState = (polygon, selected, config) => {
         .attr("opacity", 1);
   } else {
     polygon._selected = false;
-    d3.selectAll(".polygon__area")
+    d3.selectAll(config.chart.querySelectorAll(".polygon__area"))
       .transition().duration(200)
         .style("fill-opacity", config.opacityArea)
       .select(function() { return this.parentNode; }).selectAll("text")
@@ -45,6 +46,7 @@ class Radar extends Component {
     dotRadius: 4,
     opacityCircles: 0.1,
     strokeWidth: 1,
+    canFocus: true,
     color: d3.scaleOrdinal(d3.schemeCategory10)
   }
 
@@ -86,6 +88,12 @@ class Radar extends Component {
     }
   }
 
+  componentDidUpdate(prevProps, prevState) {
+    if (prevProps.highlight !== this.props.highlight) {
+      this.renderAxes();
+    }
+  }
+
   wrapText = (text, width) => {
     text.each(function() {
       let text = d3.select(this),
@@ -114,6 +122,8 @@ class Radar extends Component {
   }
 
   renderAxes = () => {
+    this.outerGroup.select(".axis__wrapper").remove();
+
     const axisGrid = this.outerGroup.append("g")
       .attr("class", "axis__wrapper");
     if (this.props.levels > 0) {
@@ -124,8 +134,8 @@ class Radar extends Component {
         .append("circle")
         .attr("class", "axis__circle")
         .attr("r", (d, i) => this.radius / this.props.levels * d)
-        .style("fill", "#CDCDCD")
-        .style("stroke", "#CDCDCD")
+        .style("fill", this.props.highlight ? "#8F85FF" : "#CDCDCD")
+        .style("stroke", this.props.highlight ? "#8F85FF" : "#CDCDCD")
         .style("fill-opacity", this.props.opacityCircles)
         .style("filter" , "url(#glow)");
 
@@ -203,7 +213,9 @@ class Radar extends Component {
         .style("fill-opacity", this.props.opacityArea)
         .style("filter" , "url(#glow)")
         .on("click", function(d, i) {
-          setPolygonSelectedState(this, !this._selected, config);
+          if (config.canFocus) {
+            setPolygonSelectedState(this, !this._selected, config);
+          }
           d3.event.stopPropagation();
         })
       .each(function(d, i) {
@@ -265,11 +277,13 @@ class Radar extends Component {
       .domain([0, this.maxValue]);
 
     // Use config to pass along items needed for functions that lose the component level scope
+    this.config.chart = this.chart;
     this.config.scaleRadial = this.scaleRadial;
     this.config.angleSlice = this.angleSlice;
     this.config.Format = this.Format;
     this.config.opacityArea = this.props.opacityArea;
     this.config.dotRadius = this.props.dotRadius;
+    this.config.canFocus = this.props.canFocus;
     this.config.color = this.props.color;
 
     this.svg = d3.select(this.chart).append("svg")
@@ -281,7 +295,7 @@ class Radar extends Component {
       .attr("transform", "translate(" + ((this.props.width / 2) + this.props.margin.left) + "," + ((this.props.height / 2) + this.props.margin.top) + ")");
 
     const filter = this.outerGroup.append('defs').append('filter').attr('id','glow');
-    filter.append('feGaussianBlur').attr('stdDeviation','2.5').attr('result','coloredBlur');
+    filter.append('feGaussianBlur').attr('stdDeviation','2').attr('result','coloredBlur');
     const feMerge = filter.append('feMerge');
     feMerge.append('feMergeNode').attr('in','coloredBlur');
     feMerge.append('feMergeNode').attr('in','SourceGraphic');

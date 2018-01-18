@@ -21,10 +21,17 @@ class VisControlGroup extends Component {
   handleControlChange = (value, id) => {
     const updatedControlList = _.cloneDeep(this.state.controls);
 
-    updatedControlList.find(control => control.id === id).checked = value;
+    if (this.props.type === "radio") {
+      updatedControlList.forEach(control => {
+        control.checked = false;
+      });
+    }
+
+    const targetIndex = updatedControlList.findIndex(control => control.id === id);
+    updatedControlList[targetIndex].checked = value;
 
     this.setState({ controls: updatedControlList });
-    this.props.onChange(updatedControlList);
+    this.props.onChange(updatedControlList, targetIndex);
   }
 
   render() {
@@ -36,7 +43,10 @@ class VisControlGroup extends Component {
               <li key={ control.id } className="vis-control-group__item">
                 <VisControl
                   id={ control.id }
+                  type={ this.props.type }
+                  name={ this.props.name }
                   label={ control.label }
+                  blockLabel={ this.props.blockLabel }
                   checked={ control.checked }
                   onChange={ this.handleControlChange }
                   visData={ control.data } />

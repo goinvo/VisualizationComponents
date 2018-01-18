@@ -1,39 +1,11 @@
-.App {
-  text-align: center;
-}
-
-.App-logo {
-  animation: App-logo-spin infinite 20s linear;
-  height: 80px;
-}
-
-.App-header {
-  background-color: #222;
-  height: 150px;
-  padding: 20px;
-  color: white;
-}
-
-.App-title {
-  font-size: 1.5em;
-}
-
-.App-intro {
-  font-size: large;
-}
-
-@keyframes App-logo-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
 .vis-container {
   display: flex;
   align-items: center;
 }
 
-.vis-container__vis {
+.vis-container__main {
   flex: 1;
+  text-align: center;
 }
 
 .vis-container__side-panel {
@@ -44,10 +16,12 @@
 
 .vis-control-group {
   display: flex;
+  justify-content: center;
   list-style: none;
+  padding-left: 0;
 }
 
-.vis-control-group.vis-control-group--stacked {
+.vis-control-group--stacked {
   flex-direction: column;
 }
 
@@ -65,16 +39,11 @@
   display: flex;
   align-items: center;
   padding: 5px 10px;
-  background-color: #fcfcfc;
-  border: 1px solid #b2b2b2;
-  border-radius: 4px;
-  box-shadow: 1px 1px 2px 0px rgba(0, 0, 0, 0.1);
   cursor: pointer;
 }
 
-.vis-control.selected {
-  background-color: #e9e8ff;
-  border: 1px solid #100699;
+.vis-control--block-label {
+  flex-direction: column;
 }
 
 .vis-control__input {
@@ -87,4 +56,8 @@
 
 .vis-control__vis {
   margin-right: 10px;
+}
+
+.vis-control--block-label .vis-control__vis {
+  margin-right: 0;
 }

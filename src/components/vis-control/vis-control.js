@@ -19,7 +19,7 @@ class VisControl extends Component {
 
   handleChange = (e) => {
     const target = e.target;
-    const value = target.type === 'checkbox' ? target.checked : target.value;
+    const value = target.checked;
 
     this.setState({ isChecked: value }, () => {
       this.forceUpdate();
@@ -34,6 +34,7 @@ class VisControl extends Component {
           className="vis-control__input"
           type={ this.props.type }
           checked={ this.state.isChecked }
+          value={ this.props.label }
           onChange={ this.handleChange } />
         <div className="vis-control__vis">
           <Radar

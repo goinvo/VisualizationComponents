@@ -23,7 +23,7 @@ class VisControlGroup extends Component {
 
     if (this.props.type === "radio") {
       updatedControlList.forEach(control => {
-        control.checked = false;
+        control.checked = "";
       });
     }
 

@@ -16,6 +16,7 @@
 
 .vis-control-group {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   list-style: none;
   padding-left: 0;
@@ -26,10 +27,12 @@
 }
 
 .vis-control-group__item {
+  width: 120px;
   margin-right: 20px;
 }
 
 .vis-control-group--stacked .vis-control-group__item {
+  width: auto;
   margin-right: 0;
   margin-bottom: 10px;
 }
@@ -38,12 +41,15 @@
   position: relative;
   display: flex;
   align-items: center;
-  padding: 5px 10px;
   cursor: pointer;
 }
 
 .vis-control--block-label {
   flex-direction: column;
+}
+
+.vis-control.selected {
+  font-weight: bold;
 }
 
 .vis-control__input {

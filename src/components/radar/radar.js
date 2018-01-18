@@ -84,6 +84,10 @@ class Radar extends Component {
           this.updateChart(nextProps.data, this.config);
         }
       }
+    } else if (this.state.chartRendered && nextProps.data.length < 1) {
+      this.outerGroup.select(".polygon-wrapper").remove();
+    } else if (this.state.chartRendered && nextProps.width !== this.props.width) {
+      this.renderChart(nextProps.data);
     }
   }
 
@@ -133,8 +137,8 @@ class Radar extends Component {
         .append("circle")
         .attr("class", "axis__circle")
         .attr("r", (d, i) => this.radius / this.props.levels * d)
-        .style("fill", this.props.highlight ? "#8F85FF" : "#CDCDCD")
-        .style("stroke", this.props.highlight ? "#8F85FF" : "#CDCDCD")
+        .style("fill", this.props.highlight ? "#8F85FF" : "#e4e4e4")
+        .style("stroke", this.props.highlight ? "#8F85FF" : "#e4e4e4")
         .style("fill-opacity", this.props.opacityCircles)
         .style("filter" , "url(#glow)");
 
@@ -154,7 +158,7 @@ class Radar extends Component {
         }
       }
 
-      if (this.props.axes && this.props.data.length) {
+      if (this.props.axes) {
         const axis = axisGrid.selectAll(".axis")
           .data(this.allAxis)
             .enter()

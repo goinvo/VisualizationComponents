@@ -14,6 +14,7 @@ class App extends Component {
     super();
 
     this.state = {
+      windowWidth: 0,
       activeOrganizations: [ data[0]._id ],
       currentYear: 2018,
       activeYear: 2018,
@@ -28,8 +29,15 @@ class App extends Component {
   }
 
   componentDidMount() {
+    this.updateWindowDimensions();
+    window.addEventListener('resize', this.updateWindowDimensions);
+
     this.mapColorsToData();
     this.initDataState();
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.updateWindowDimensions);
   }
 
   initDataState = () => {
@@ -97,6 +105,10 @@ class App extends Component {
         this.setState({ radarData: [this.assembleRadarDataObjectFor(data[0]._id, this.state.activeYear, this.state.activeMonth)] });
       }
     });
+  }
+
+  updateWindowDimensions = () => {
+    this.setState({ windowWidth: window.innerWidth });
   }
 
   assembleRadarData = () => {
@@ -168,11 +180,16 @@ class App extends Component {
   }
 
   render() {
+    const sizeBasedOnWindow = ((this.state.windowWidth / 3) * 2);
+    const size = sizeBasedOnWindow > 500 ? 500 : sizeBasedOnWindow;
     return (
       <div className="App">
         <div className="vis-container">
           <div className="vis-container__main">
-            <Radar data={ this.state.radarData } />
+            <Radar
+              data={ this.state.radarData }
+              width={ size }
+              height={ size } />
             <VisControlGroup
               type="radio"
               name="date-control"

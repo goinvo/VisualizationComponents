@@ -38,6 +38,7 @@ class VisControl extends Component {
           onChange={ this.handleChange } />
         <div className="vis-control__vis">
           <Radar
+            type={ this.props.visType }
             data={ this.props.visData }
             width={ 50 }
             height={ 50 }

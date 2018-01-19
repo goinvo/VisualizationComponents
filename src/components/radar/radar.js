@@ -31,6 +31,7 @@ const setPolygonSelectedState = (polygon, selected, config) => {
 class Radar extends Component {
 
   static defaultProps = {
+    type: 'radar',
     width: 500,
     height: 500,
     margin: { top: 50, right: 50, bottom: 50, left: 50 },
@@ -94,6 +95,8 @@ class Radar extends Component {
   componentDidUpdate(prevProps, prevState) {
     if (prevProps.highlight !== this.props.highlight) {
       this.renderAxes();
+    } else if (prevProps.type !== this.props.type) {
+      this.renderChart(this.props.data);
     }
   }
 
@@ -126,77 +129,90 @@ class Radar extends Component {
 
   renderAxes = () => {
     this.outerGroup.select(".axis__wrapper").remove();
-
     const axisGrid = this.outerGroup.append("g")
       .attr("class", "axis__wrapper");
+
     if (this.props.levels > 0) {
-      //Draw the background circles
-      axisGrid.selectAll(".axis__level")
-        .data(d3.range(1, (this.props.levels + 1)).reverse())
-          .enter()
-        .append("circle")
-        .attr("class", "axis__circle")
-        .attr("r", (d, i) => this.radius / this.props.levels * d)
-        .style("fill", this.props.highlight ? "#8F85FF" : "#e4e4e4")
-        .style("stroke", this.props.highlight ? "#8F85FF" : "#e4e4e4")
-        .style("fill-opacity", this.props.opacityCircles)
-        .style("filter" , "url(#glow)");
-
-        if (this.props.levelLabel) {
-          //Text indicating at what % each level is
-          axisGrid.selectAll(".axisLabel")
-            .data(d3.range(1, (this.props.levels + 1)).reverse())
-              .enter()
-            .append("text")
-            .attr("class", "axis__label")
-            .attr("x", 4)
-            .attr("y", d => -d * this.radius / this.props.levels)
-            .attr("dy", "0.4em")
-            .style("font-size", "10px")
-            .attr("fill", "#737373")
-            .text((d, i) => this.Format(this.maxValue * d / this.props.levels));
-        }
-      }
-
-      if (this.props.axes) {
-        const axis = axisGrid.selectAll(".axis")
-          .data(this.allAxis)
+      if (this.props.type === 'radar') {
+        axisGrid.selectAll(".axis__level")
+          .data(d3.range(1, (this.props.levels + 1)).reverse())
             .enter()
-          .append("g")
-          .attr("class", "axis");
+          .append("circle")
+          .attr("class", "axis__circle")
+          .attr("r", (d, i) => this.radius / this.props.levels * d)
+          .style("fill", this.props.highlight ? "#8F85FF" : "#e4e4e4")
+          .style("stroke", this.props.highlight ? "#8F85FF" : "#e4e4e4")
+          .style("fill-opacity", this.props.opacityCircles)
+          .style("filter" , "url(#glow)");
+      } else if (this.props.type === 'spider') {
+        const levelWrapper = axisGrid.append("g")
+          .attr("class", "level-wrapper")
+          .attr("transform", "translate(" + (-(this.props.width / 2)) + ", " + (-(this.props.height / 2)) + ")");
 
-        //Append the lines
-        axis.append("line")
-          .attr("x1", 0)
-          .attr("y1", 0)
-          .attr("x2", (d, i) => this.scaleRadial(this.maxValue * 1.1) * Math.cos(this.angleSlice * i - Math.PI / 2))
-          .attr("y2", (d, i) => this.scaleRadial(this.maxValue * 1.1) * Math.sin(this.angleSlice * i - Math.PI / 2))
-          .attr("class", "line")
-          .style("stroke", "white")
-          .style("stroke-width", "2px");
+        for (var level = 0; level < this.props.levels; level++) {
+          let levelFactor = this.radius * ((level + 1) / this.props.levels);
 
-        if (this.props.axisLabel) {
-          //Append the labels at each axis
-          axis.append("text")
-            .attr("class", "legend")
-            .style("font-size", "11px")
-            .attr("text-anchor", "middle")
-            .attr("dy", "0.35em")
-            .attr("x", (d, i) => (this.scaleRadial(this.maxValue * this.props.labelOffset) * Math.cos(this.angleSlice * i - Math.PI / 2)))
-            .attr("y", (d, i) => (this.scaleRadial(this.maxValue * this.props.labelOffset) * Math.sin(this.angleSlice * i - Math.PI / 2)))
-            .text(d => d)
-            .call(this.wrapText, this.props.wrapWidth);
+          levelWrapper.selectAll(".axis__level")
+            .data(this.allAxis).enter()
+            .append("svg:line").classed("level-lines", true)
+            .attr("x1", (d, i) => levelFactor * (1 - Math.sin(i * this.angleSlice)))
+            .attr("y1", (d, i) => levelFactor * (1 - Math.cos(i * this.angleSlice)))
+            .attr("x2", (d, i) => levelFactor * (1 - Math.sin((i + 1) * this.angleSlice)))
+            .attr("y2", (d, i) => levelFactor * (1 - Math.cos((i + 1) * this.angleSlice)))
+            .attr("transform", "translate(" + (this.props.width / 2 - levelFactor) + ", " + (this.props.height / 2 - levelFactor) + ")")
+            .attr("stroke", this.props.highlight ? "#8F85FF" : "#cdcdcd")
+            .attr("stroke-width", this.props.highlight ? "2px" : "1px");
         }
       }
+      if (this.props.levelLabel) {
+        //Text indicating at what % each level is
+        axisGrid.selectAll(".axisLabel")
+          .data(d3.range(1, (this.props.levels + 1)).reverse())
+            .enter()
+          .append("text")
+          .attr("class", "axis__label")
+          .attr("x", 4)
+          .attr("y", d => -d * this.radius / this.props.levels)
+          .attr("dy", "0.4em")
+          .style("font-size", "10px")
+          .attr("fill", "#737373")
+          .text((d, i) => this.Format(this.maxValue * d / this.props.levels));
+      }
+    }
+
+    if (this.props.axes) {
+      const axis = axisGrid.selectAll(".axis")
+        .data(this.allAxis)
+          .enter()
+        .append("g")
+        .attr("class", "axis");
+
+      //Append the lines
+      axis.append("line")
+        .attr("x1", 0)
+        .attr("y1", 0)
+        .attr("x2", (d, i) => this.scaleRadial(this.maxValue) * Math.cos(this.angleSlice * i - Math.PI / 2))
+        .attr("y2", (d, i) => this.scaleRadial(this.maxValue) * Math.sin(this.angleSlice * i - Math.PI / 2))
+        .attr("class", "line")
+        .style("stroke", "#cdcdcd")
+        .style("stroke-width", "1px");
+
+      if (this.props.axisLabel) {
+        //Append the labels at each axis
+        axis.append("text")
+          .attr("class", "legend")
+          .style("font-size", "11px")
+          .attr("text-anchor", "middle")
+          .attr("dy", "0.35em")
+          .attr("x", (d, i) => (this.scaleRadial(this.maxValue * this.props.labelOffset) * Math.cos(this.angleSlice * i - Math.PI / 2)))
+          .attr("y", (d, i) => (this.scaleRadial(this.maxValue * this.props.labelOffset) * Math.sin(this.angleSlice * i - Math.PI / 2)))
+          .text(d => d)
+          .call(this.wrapText, this.props.wrapWidth);
+      }
+    }
   }
 
   renderPolygons = (data, config) => {
-    // The radial line function
-    // const radarLine = d3.radialLine()
-    //   .radius(d => this.scaleRadial(d.value))
-    //   .angle((d,i) => i * this.angleSlice)
-    //   .curve(d3.curveLinearClosed);
-
     // Build the polygons and points
     this.polygonWrapper = this.outerGroup.selectAll(".polygon-wrapper")
       .data(data).enter()

@@ -49,7 +49,8 @@ class VisControlGroup extends Component {
                   blockLabel={ this.props.blockLabel }
                   checked={ control.checked }
                   onChange={ this.handleControlChange }
-                  visData={ control.data } />
+                  visData={ control.data }
+                  visType={ this.props.visType } />
               </li>
             )
           })

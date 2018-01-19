@@ -1,13 +1,30 @@
 import React, { Component } from 'react';
 import * as d3 from 'd3';
 import _ from 'lodash';
+import Select from 'react-select';
 
 import VisControlGroup from './components/vis-control-group/vis-control-group';
 import Radar from './components/radar/radar';
 
 import data from './data/data.json';
 
+import 'react-select/dist/react-select.css';
 import './App.css';
+
+const visTypes = [
+  {
+    value: 'radar',
+    label: 'Radar'
+  },
+  {
+    value: 'spider',
+    label: 'Spider'
+  },
+  {
+    value: 'hgraph',
+    label: 'hGraph'
+  }
+];
 
 class App extends Component {
   constructor() {
@@ -21,7 +38,8 @@ class App extends Component {
       activeMonth: 1,
       patientData: [],
       dateData: [],
-      radarData: []
+      radarData: [],
+      visType: visTypes[0]
     }
 
     this.color = d3.scaleOrdinal(d3.schemeCategory10);
@@ -177,24 +195,42 @@ class App extends Component {
     return this.state.patientData.filter(patient => patient.checked);
   }
 
+  handleVisSelectChange = (visType) => {
+    this.setState({ visType });
+  }
+
   render() {
     const breakpoint = 650;
     const sizeBasedOnWindow = ((this.state.windowWidth / 3) * 2);
     const size = sizeBasedOnWindow > 500 ? 500 : sizeBasedOnWindow;
+    const { visType } = this.state;
+    const visTypeValue = visType && visType.value;
+
     return (
       <div className="App">
+        <div className="vis-select-container">
+          <Select
+            name="vis-select"
+            value={ visTypeValue }
+            onChange={ this.handleVisSelectChange }
+            options={ visTypes }
+            clearable={ false }
+          />
+        </div>
         <div className="vis-container">
           <div className="vis-container__main">
             <Radar
               data={ this.state.radarData }
               width={ size }
-              height={ size } />
+              height={ size }
+              type={ this.state.visType.value } />
             <div className="vis-container__controls-container">
               <div className={ `vis-container__date-controls ${sizeBasedOnWindow < breakpoint ? 'vis-container__date-controls--mobile ' : ''}` }>
                 <p className="label">Time period</p>
                 <VisControlGroup
                   type="radio"
                   name="date-control"
+                  visType={ this.state.visType.value }
                   stacked={ sizeBasedOnWindow < breakpoint ? true : false }
                   blockLabel={ true }
                   controls={ this.state.dateData }
@@ -206,6 +242,7 @@ class App extends Component {
                     <p className="label">Patients</p>
                     <VisControlGroup
                       type="checkbox"
+                      visType={ this.state.visType.value }
                       stacked={ true }
                       blockLabel={ true }
                       controls={ this.state.patientData }
@@ -221,6 +258,7 @@ class App extends Component {
                 <p className="label">Patients</p>
                 <VisControlGroup
                   type="checkbox"
+                  visType={ this.state.visType.value }
                   stacked={ true }
                   controls={ this.state.patientData }
                   onChange={ this.handlePatientControlListChange } />

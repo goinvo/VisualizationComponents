@@ -87,3 +87,8 @@
 .label {
   color: #888;
 }
+
+.vis-select-container {
+  width: 150px;
+  padding: 10px;
+}

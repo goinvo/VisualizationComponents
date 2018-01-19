@@ -180,6 +180,7 @@ class App extends Component {
   }
 
   render() {
+    const breakpoint = 650;
     const sizeBasedOnWindow = ((this.state.windowWidth / 3) * 2);
     const size = sizeBasedOnWindow > 500 ? 500 : sizeBasedOnWindow;
     return (
@@ -190,20 +191,44 @@ class App extends Component {
               data={ this.state.radarData }
               width={ size }
               height={ size } />
-            <VisControlGroup
-              type="radio"
-              name="date-control"
-              blockLabel={ true }
-              controls={ this.state.dateData }
-              onChange={ this.handleDateControlListChange } />
+            <div className="vis-container__controls-container">
+              <div className={ `vis-container__date-controls ${sizeBasedOnWindow < breakpoint ? 'vis-container__date-controls--mobile ' : ''}` }>
+                <p className="label">Time period</p>
+                <VisControlGroup
+                  type="radio"
+                  name="date-control"
+                  stacked={ sizeBasedOnWindow < breakpoint ? true : false }
+                  blockLabel={ true }
+                  controls={ this.state.dateData }
+                  onChange={ this.handleDateControlListChange } />
+              </div>
+              {
+                sizeBasedOnWindow < breakpoint ?
+                  <div className="vis-container__org-controls">
+                    <p className="label">Organizations</p>
+                    <VisControlGroup
+                      type="checkbox"
+                      stacked={ true }
+                      blockLabel={ true }
+                      controls={ this.state.orgData }
+                      onChange={ this.handleOrgControlListChange } />
+                  </div>
+                : null
+              }
+            </div>
           </div>
-          <div className="vis-container__side-panel">
-            <VisControlGroup
-              type="checkbox"
-              stacked={ true }
-              controls={ this.state.orgData }
-              onChange={ this.handleOrgControlListChange } />
-          </div>
+          {
+            sizeBasedOnWindow >= breakpoint ?
+              <div className="vis-container__side-panel">
+                <p className="label">Organizations</p>
+                <VisControlGroup
+                  type="checkbox"
+                  stacked={ true }
+                  controls={ this.state.orgData }
+                  onChange={ this.handleOrgControlListChange } />
+              </div>
+            : null
+          }
         </div>
       </div>
     );

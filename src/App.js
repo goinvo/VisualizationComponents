@@ -15,12 +15,11 @@ class App extends Component {
 
     this.state = {
       windowWidth: 0,
-      activeOrganizations: [ data[0]._id ],
       currentYear: 2018,
       activeYear: 2018,
       currentMonth: 1,
       activeMonth: 1,
-      orgData: [],
+      patientData: [],
       dateData: [],
       radarData: []
     }
@@ -41,17 +40,16 @@ class App extends Component {
   }
 
   initDataState = () => {
-    // Org data
-    const orgData = data.map((org, i) => {
+    const patientData = data.map((patient, i) => {
       return {
-        id: org._id,
-        label: org.organization,
+        id: patient._id,
+        label: patient.patient,
         checked: false,
-        data: [ this.assembleRadarDataObjectFor(org._id, this.state.currentYear, this.state.currentMonth) ]
+        data: [ this.assembleRadarDataObjectFor(patient._id, this.state.currentYear, this.state.currentMonth) ]
       };
     });
-    orgData[0].checked = true;
-    this.setState({ orgData }, () => {
+    patientData[0].checked = true;
+    this.setState({ patientData }, () => {
       // Date data
       const now = new Date('2018:01');
       const nextQuarter = new Date(now);
@@ -90,8 +88,8 @@ class App extends Component {
           date: dateObj.date,
           label: dateObj.label,
           checked: "",
-          data: this.getActiveOrganizations().map(org => {
-            return this.assembleRadarDataObjectFor(org.id, dateObj.date.getFullYear(), dateObj.date.getMonth() + 1)
+          data: this.getActivepatients().map(patient => {
+            return this.assembleRadarDataObjectFor(patient.id, dateObj.date.getFullYear(), dateObj.date.getMonth() + 1)
           })
         }
       });
@@ -99,7 +97,7 @@ class App extends Component {
       this.setState({ dateData })
 
       // Radar data
-      if (this.getActiveOrganizations().length) {
+      if (this.getActivepatients().length) {
         this.setState({ radarData: this.assembleRadarData() });
       } else {
         this.setState({ radarData: [this.assembleRadarDataObjectFor(data[0]._id, this.state.activeYear, this.state.activeMonth)] });
@@ -112,8 +110,8 @@ class App extends Component {
   }
 
   assembleRadarData = () => {
-    return this.getActiveOrganizations().map(org => {
-      return this.assembleRadarDataObjectFor(org.id, this.state.activeYear, this.state.activeMonth);
+    return this.getActivepatients().map(patient => {
+      return this.assembleRadarDataObjectFor(patient.id, this.state.activeYear, this.state.activeMonth);
     });
   }
 
@@ -123,29 +121,29 @@ class App extends Component {
     });
   }
 
-  assembleRadarDataObjectFor(orgId, year, month) {
-    const orgData = data.find(orgItem => orgItem._id === orgId);
-    const yearForOrg = orgData.years.find(yearItem => yearItem.year === year);
-    const monthForOrg = yearForOrg.months.find(monthItem => monthItem.month === month);
-    const valuesForOrg = monthForOrg.values.map(val => {
+  assembleRadarDataObjectFor(patientId, year, month) {
+    const patientData = data.find(patientItem => patientItem._id === patientId);
+    const yearForPatient = patientData.years.find(yearItem => yearItem.year === year);
+    const monthForPatient = yearForPatient.months.find(monthItem => monthItem.month === month);
+    const valuesForPatient = monthForPatient.values.map(val => {
       return { value: val.value, label: val.measure };
     });
 
     return {
-      id: orgId,
-      legendLabel: orgData.organization,
-      color: orgData.color,
-      values: valuesForOrg
+      id: patientId,
+      legendLabel: patientData.patient,
+      color: patientData.color,
+      values: valuesForPatient
     };
   }
 
-  handleOrgControlListChange = (controlList, indexOfChange) => {
-    this.setState({ orgData: controlList }, () => {
+  handlePatientControlListChange = (controlList, indexOfChange) => {
+    this.setState({ patientData: controlList }, () => {
       const dateData = _.cloneDeep(this.state.dateData);
 
       dateData.forEach(dateObj => {
-        dateObj.data = this.getActiveOrganizations().map(org => {
-          return this.assembleRadarDataObjectFor(org.id, dateObj.date.getFullYear(), dateObj.date.getMonth() + 1);
+        dateObj.data = this.getActivepatients().map(patient => {
+          return this.assembleRadarDataObjectFor(patient.id, dateObj.date.getFullYear(), dateObj.date.getMonth() + 1);
         });
       });
       this.setState({
@@ -157,14 +155,14 @@ class App extends Component {
 
   handleDateControlListChange = (controlList, indexOfChange) => {
     const newActiveDate = new Date(controlList[indexOfChange].date);
-    const newOrgData = _.cloneDeep(this.state.orgData);
+    const newPatientData = _.cloneDeep(this.state.patientData);
 
-    newOrgData.forEach(org => {
-      org.data = [ this.assembleRadarDataObjectFor(org.id, newActiveDate.getFullYear(), newActiveDate.getMonth() + 1) ];
+    newPatientData.forEach(patient => {
+      patient.data = [ this.assembleRadarDataObjectFor(patient.id, newActiveDate.getFullYear(), newActiveDate.getMonth() + 1) ];
     })
 
     this.setState({
-      orgData: newOrgData,
+      patientData: newPatientData,
       dateData: controlList,
       activeYear: newActiveDate.getFullYear(),
       activeMonth: newActiveDate.getMonth() + 1
@@ -175,8 +173,8 @@ class App extends Component {
     });
   }
 
-  getActiveOrganizations = () => {
-    return this.state.orgData.filter(org => org.checked);
+  getActivepatients = () => {
+    return this.state.patientData.filter(patient => patient.checked);
   }
 
   render() {
@@ -204,14 +202,14 @@ class App extends Component {
               </div>
               {
                 sizeBasedOnWindow < breakpoint ?
-                  <div className="vis-container__org-controls">
-                    <p className="label">Organizations</p>
+                  <div className="vis-container__patient-controls">
+                    <p className="label">Patients</p>
                     <VisControlGroup
                       type="checkbox"
                       stacked={ true }
                       blockLabel={ true }
-                      controls={ this.state.orgData }
-                      onChange={ this.handleOrgControlListChange } />
+                      controls={ this.state.patientData }
+                      onChange={ this.handlePatientControlListChange } />
                   </div>
                 : null
               }
@@ -220,12 +218,12 @@ class App extends Component {
           {
             sizeBasedOnWindow >= breakpoint ?
               <div className="vis-container__side-panel">
-                <p className="label">Organizations</p>
+                <p className="label">Patients</p>
                 <VisControlGroup
                   type="checkbox"
                   stacked={ true }
-                  controls={ this.state.orgData }
-                  onChange={ this.handleOrgControlListChange } />
+                  controls={ this.state.patientData }
+                  onChange={ this.handlePatientControlListChange } />
               </div>
             : null
           }

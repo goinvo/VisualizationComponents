@@ -3,10 +3,10 @@
     'repeat(5)': {
       _id: '{{objectId()}}',
       index: '{{index()}}',
-      organization: function() {
+      patient: function() {
         // Number of items in this array must equal the number of repeats above
-        var companies = ['apple', 'banana', 'strawberry', 'grape', 'peach'];
-        return companies[this.index];
+        var patients = ['Veronica H.', 'Diego C.', 'Charles W.', 'Maya D.', 'Tazeen K.'];
+        return patients[this.index];
       },
       years: [
         {
@@ -28,11 +28,11 @@
                   },
                   values: [
                     {
-                      'repeat(5)': {
+                      'repeat(7)': {
                         index: '{{index()}}',
                         measure: function() {
                           // Number of items in this array must equal the number of repeats above
-                          var measures = ['HEDIS', 'STAR', 'POOP', 'BUCHLA SYNTHS', 'SO HEADY'];
+                          var measures = ['Behavior', 'Social Circumstances', 'Genetics & Biology', 'Medical Care', 'Health Literacy', 'Access', 'Environment'];
                           return measures[this.index];
                         },
                         value: '{{floating(0.15, 1.00)}}'

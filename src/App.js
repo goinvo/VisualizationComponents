@@ -39,7 +39,7 @@ class App extends Component {
       patientData: [],
       dateData: [],
       radarData: [],
-      visType: visTypes[0]
+      visType: visTypes[2]
     }
 
     this.color = d3.scaleOrdinal(d3.schemeCategory10);
@@ -223,7 +223,9 @@ class App extends Component {
               data={ this.state.radarData }
               width={ size }
               height={ size }
-              type={ this.state.visType.value } />
+              type={ this.state.visType.value }
+              axes={ this.state.visType.value === 'hgraph' ? false : true }
+              levelLabel={ this.state.visType.value === 'hgraph' ? false : true }/>
             <div className="vis-container__controls-container">
               <div className={ `vis-container__date-controls ${sizeBasedOnWindow < breakpoint ? 'vis-container__date-controls--mobile ' : ''}` }>
                 <p className="label">Time period</p>

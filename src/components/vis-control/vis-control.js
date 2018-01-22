@@ -46,6 +46,7 @@ class VisControl extends Component {
             levels={ 1 }
             levelLabel={ false }
             axes={ false }
+            axisLabel={ false }
             dotRadius={ 2 }
             canFocus={ false }
             highlight={ this.state.isChecked }

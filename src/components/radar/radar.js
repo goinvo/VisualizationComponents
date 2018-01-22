@@ -31,6 +31,14 @@ const setPolygonSelectedState = (polygon, selected, config) => {
   }
 }
 
+const thresholdColor = (d, config) => {
+  if (config.visType === 'hgraph') {
+    return (d.value < config.thresholdLower || d.value > config.thresholdUpper) ? 'red' : d.color;
+  } else {
+    return d.color;
+  }
+}
+
 class Radar extends Component {
 
   static defaultProps = {
@@ -54,7 +62,9 @@ class Radar extends Component {
     strokeColor: '#eaeaea',
     highlightStrokeColor: '#8F85FF',
     canFocus: true,
-    color: d3.scaleOrdinal(d3.schemeCategory10)
+    color: d3.scaleOrdinal(d3.schemeCategory10),
+    thresholdLower: 0.25,
+    thresholdUpper: 0.75
   }
 
   constructor() {
@@ -170,7 +180,21 @@ class Radar extends Component {
             .attr("stroke", this.props.highlight ? this.props.highlightStrokeColor : this.props.strokeColor)
             .attr("stroke-width", this.props.highlight ? "2px" : "1px");
         }
+      } else if (this.props.type === 'hgraph') {
+        const tau = 2 * Math.PI;
+        const arc = d3.arc()
+          .outerRadius(this.scaleRadial(this.props.thresholdUpper))
+          .innerRadius(this.scaleRadial(this.props.thresholdLower))
+          .startAngle(0)
+          .endAngle(tau);
+
+        axisGrid.append("path")
+          .attr("class", "axis__threshold")
+          .attr("d", arc)
+          .style("fill", this.props.highlight ? this.props.highlightStrokeColor : "green")
+          .style("fill-opacity", this.props.highlight ? .75 : .25);
       }
+
       if (this.props.levelLabel) {
         //Text indicating at what % each level is
         axisGrid.selectAll(".axisLabel")
@@ -187,7 +211,7 @@ class Radar extends Component {
       }
     }
 
-    if (this.props.axes) {
+    if (this.props.axes || this.props.axisLabel) {
       const axis = axisGrid.selectAll(".axis")
         .data(this.allAxis)
           .enter()
@@ -195,14 +219,16 @@ class Radar extends Component {
         .attr("class", "axis");
 
       //Append the lines
-      axis.append("line")
-        .attr("x1", 0)
-        .attr("y1", 0)
-        .attr("x2", (d, i) => this.scaleRadial(this.maxValue) * Math.cos(this.angleSlice * i - Math.PI / 2))
-        .attr("y2", (d, i) => this.scaleRadial(this.maxValue) * Math.sin(this.angleSlice * i - Math.PI / 2))
-        .attr("class", "line")
-        .style("stroke", this.props.strokeColor)
-        .style("stroke-width", "1px");
+      if (this.props.axes) {
+        axis.append("line")
+          .attr("x1", (d, i) => this.scaleRadial(0) * Math.cos(this.angleSlice * i - Math.PI / 2))
+          .attr("y1", (d, i) => this.scaleRadial(0) * Math.sin(this.angleSlice * i - Math.PI / 2))
+          .attr("x2", (d, i) => this.scaleRadial(this.maxValue) * Math.cos(this.angleSlice * i - Math.PI / 2))
+          .attr("y2", (d, i) => this.scaleRadial(this.maxValue) * Math.sin(this.angleSlice * i - Math.PI / 2))
+          .attr("class", "line")
+          .style("stroke", this.props.strokeColor)
+          .style("stroke-width", "1px");
+      }
 
       if (this.props.axisLabel) {
         //Append the labels at each axis
@@ -244,6 +270,15 @@ class Radar extends Component {
           }
           d3.event.stopPropagation();
         })
+      // .select(function() { return this.parentNode; })
+      //   .append("text")
+      //     .attr("x", 0)
+      //     .attr("y", 0)
+      //     .attr("alignment-baseline", "middle")
+      //     .style("text-anchor", "middle")
+      //     .style("font-size", "68px")
+      //     .style("fill", d => d.color)
+      //     .text("100")
       .each(function(d, i) {
         d3.select(this.parentNode).selectAll("polygon__point-wrapper")
           .data(d => {
@@ -262,7 +297,7 @@ class Radar extends Component {
             .attr("r", config.dotRadius)
             .attr("cx", (d, i) => config.scaleRadial(d.value) * Math.cos(config.angleSlice * i - Math.PI / 2))
             .attr("cy", (d, i) => config.scaleRadial(d.value) * Math.sin(config.angleSlice * i - Math.PI / 2))
-            .style("fill", (d) => d.color)
+            .style("fill", (d) => thresholdColor(d, config))
             .style("fill-opacity", 1)
           .select(function() { return this.parentNode; })
           .append("g")
@@ -274,22 +309,25 @@ class Radar extends Component {
             .attr("cx", (d, i) => config.scaleRadial(parseFloat(d.value) + config.activeDotOffset) * Math.cos(config.angleSlice * i - Math.PI / 2))
             .attr("cy", (d, i) => config.scaleRadial(parseFloat(d.value) + config.activeDotOffset) * Math.sin(config.angleSlice * i - Math.PI / 2))
             .style("fill", config.activeDotFillColor)
-            .style("stroke", d => d.color)
+            .style("stroke", (d) => thresholdColor(d, config))
             .style("stroke-width", "1px")
           .select(function() { return this.parentNode; })
           .append("text")
             .attr("x", (d, i) => config.scaleRadial(parseFloat(d.value) + config.activeDotOffset) * Math.cos(config.angleSlice * i - Math.PI / 2))
             .attr("y", (d, i) => config.scaleRadial(parseFloat(d.value) + config.activeDotOffset) * Math.sin(config.angleSlice * i - Math.PI / 2))
             .style("font-size", "20px")
+            .style("fill", (d) => thresholdColor(d, config))
+          .append("svg:tspan")
+            .attr("class", "polygon__active-point-percentage")
             .attr("alignment-baseline", "middle")
             .style("text-anchor", "middle")
-            .style("fill", d => d.color)
             .text(d => config.Format(d.value).slice(0, -1))
+          .select(function() { return this.parentNode; })
           .append("svg:tspan")
+            .attr("class", "polygon__active-point-percent-sign")
             .style("font-size", "10px")
             .attr("alignment-baseline", "mathematical")
-            .style("fill", d => d.color)
-            .text("%");;
+            .text("%");
       });
   }
 
@@ -303,11 +341,15 @@ class Radar extends Component {
     // NOTE: data[0] means currently this code assumes all entries have the same axis data
     this.allAxis = (data[0].values.map(function(val) { return val.label } ));  //Names of each axis
     this.radius = Math.min( (this.props.width / 2), (this.props.height / 2) );  //Radius of the outermost circle
+    this.rangeBottom = 0;
+    if (this.props.type === 'hgraph') {
+      this.rangeBottom = this.radius / 2.5;
+    }
     this.Format = d3.format('.0%');  //Percentage formatting
     this.angleSlice = (Math.PI * 2) / this.allAxis.length;  //The width in radians of each "slice"
 
     this.scaleRadial = d3.scaleLinear()
-      .range([0, this.radius])
+      .range([this.rangeBottom, this.radius])
       .domain([0, this.maxValue]);
 
     // Use config to pass along items needed for functions that lose the component level scope
@@ -315,6 +357,7 @@ class Radar extends Component {
     this.config.scaleRadial = this.scaleRadial;
     this.config.angleSlice = this.angleSlice;
     this.config.Format = this.Format;
+    this.config.visType = this.props.type;
     this.config.opacityArea = this.props.opacityArea;
     this.config.dotRadius = this.props.dotRadius;
     this.config.canFocus = this.props.canFocus;
@@ -323,6 +366,8 @@ class Radar extends Component {
     this.config.strokeColor = this.props.strokeColor;
     this.config.highlightStrokeColor = this.props.highlightStrokeColor;
     this.config.activeDotFillColor = this.props.activeDotFillColor;
+    this.config.thresholdLower = this.props.thresholdLower;
+    this.config.thresholdUpper = this.props.thresholdUpper;
 
     this.svg = d3.select(this.chart).append("svg")
       .attr("width",  this.props.width + this.props.margin.left + this.props.margin.right)
@@ -362,33 +407,39 @@ class Radar extends Component {
       })
     .each(function(d, j) {
       const newData = d.values.map(val => {
-        return { value: val.value };
+        return { value: val.value, color: d.color };
       });
 
       d3.select(this.parentNode).selectAll(".polygon__point")
         .data(newData)
         .transition().duration(750)
+          .style("fill", (d) => thresholdColor(d, config))
           .attr("cx", (d, i) => config.scaleRadial(d.value) * Math.cos(config.angleSlice * i - Math.PI / 2))
           .attr("cy", (d, i) => config.scaleRadial(d.value) * Math.sin(config.angleSlice * i - Math.PI / 2));
 
       d3.select(this.parentNode).selectAll(".polygon__active-point")
         .data(newData)
         .transition().duration(750)
+          .style("stroke", (d) => thresholdColor(d, config))
           .attr("cx", (d, i) => config.scaleRadial(parseFloat(d.value) + config.activeDotOffset) * Math.cos(config.angleSlice * i - Math.PI / 2))
           .attr("cy", (d, i) => config.scaleRadial(parseFloat(d.value) + config.activeDotOffset) * Math.sin(config.angleSlice * i - Math.PI / 2));
 
       d3.select(this.parentNode).selectAll(".polygon__active-point-wrapper text")
         .data(newData)
         .transition().duration(750)
+          .style("fill", (d) => thresholdColor(d, config))
           .attr("x", (d, i) => config.scaleRadial(parseFloat(d.value) + config.activeDotOffset) * Math.cos(config.angleSlice * i - Math.PI / 2))
-          .attr("y", (d, i) => config.scaleRadial(parseFloat(d.value) + config.activeDotOffset) * Math.sin(config.angleSlice * i - Math.PI / 2))
-          .text(d => config.Format(d.value));
+          .attr("y", (d, i) => config.scaleRadial(parseFloat(d.value) + config.activeDotOffset) * Math.sin(config.angleSlice * i - Math.PI / 2));
+
+      d3.select(this.parentNode).selectAll(".polygon__active-point-percentage")
+        .data(newData)
+          .text(d => config.Format(d.value).slice(0, -1));
     });
   }
 
   render() {
     return(
-      <div ref={node => this.chart = node} className="chart--radar"></div>
+      <div ref={node => this.chart = node} className="vis vis--radar"></div>
     )
   }
 }

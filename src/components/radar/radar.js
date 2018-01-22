@@ -10,20 +10,23 @@ const setPolygonSelectedState = (polygon, selected, config) => {
       })
       .transition().duration(200)
       .style("fill-opacity", 0.1)
-      .select(function() { return this.parentNode; }).selectAll("text")
+      .style("stroke-opacity", 0.25)
+      .select(function() { return this.parentNode; }).selectAll(".polygon__active-point-wrapper")
         .attr("opacity", 0);
     polygon._selected = true;
     d3.select(polygon)
       .transition().duration(200)
-        .style("fill-opacity", 0.65)
-      .select(function() { return this.parentNode; }).selectAll("text")
+        .style("fill-opacity", 0.5)
+        .style("stroke-opacity", 1)
+      .select(function() { return this.parentNode; }).selectAll(".polygon__active-point-wrapper")
         .attr("opacity", 1);
   } else {
     polygon._selected = false;
     d3.selectAll(config.chart.querySelectorAll(".polygon__area"))
       .transition().duration(200)
         .style("fill-opacity", config.opacityArea)
-      .select(function() { return this.parentNode; }).selectAll("text")
+        .style("stroke-opacity", 1)
+      .select(function() { return this.parentNode; }).selectAll(".polygon__active-point-wrapper")
         .attr("opacity", 0);
   }
 }
@@ -41,11 +44,15 @@ class Radar extends Component {
     levelLabel: true,
     maxValue: 1,
     labelOffset: 1.1,
+    activeDotOffset: 0.025,
+    activeDotFillColor: '#fff',
     wrapWidth: 60,
-    opacityArea: 0.2,
+    opacityArea: 0.25,
     dotRadius: 4,
-    opacityCircles: 0.1,
+    levelsOpacity: 0.1,
     strokeWidth: 1,
+    strokeColor: '#eaeaea',
+    highlightStrokeColor: '#8F85FF',
     canFocus: true,
     color: d3.scaleOrdinal(d3.schemeCategory10)
   }
@@ -94,7 +101,7 @@ class Radar extends Component {
 
   componentDidUpdate(prevProps, prevState) {
     if (prevProps.highlight !== this.props.highlight) {
-      this.renderAxes();
+      this.renderChart(this.props.data);
     } else if (prevProps.type !== this.props.type) {
       this.renderChart(this.props.data);
     }
@@ -140,9 +147,9 @@ class Radar extends Component {
           .append("circle")
           .attr("class", "axis__circle")
           .attr("r", (d, i) => this.radius / this.props.levels * d)
-          .style("fill", this.props.highlight ? "#8F85FF" : "#e4e4e4")
-          .style("stroke", this.props.highlight ? "#8F85FF" : "#e4e4e4")
-          .style("fill-opacity", this.props.opacityCircles)
+          .style("fill", this.props.highlight ? this.props.highlightStrokeColor : this.props.strokeColor)
+          .style("stroke", this.props.highlight ? this.props.highlightStrokeColor : this.props.strokeColor)
+          .style("fill-opacity", this.props.levelsOpacity)
           .style("filter" , "url(#glow)");
       } else if (this.props.type === 'spider') {
         const levelWrapper = axisGrid.append("g")
@@ -160,7 +167,7 @@ class Radar extends Component {
             .attr("x2", (d, i) => levelFactor * (1 - Math.sin((i + 1) * this.angleSlice)))
             .attr("y2", (d, i) => levelFactor * (1 - Math.cos((i + 1) * this.angleSlice)))
             .attr("transform", "translate(" + (this.props.width / 2 - levelFactor) + ", " + (this.props.height / 2 - levelFactor) + ")")
-            .attr("stroke", this.props.highlight ? "#8F85FF" : "#cdcdcd")
+            .attr("stroke", this.props.highlight ? this.props.highlightStrokeColor : this.props.strokeColor)
             .attr("stroke-width", this.props.highlight ? "2px" : "1px");
         }
       }
@@ -194,7 +201,7 @@ class Radar extends Component {
         .attr("x2", (d, i) => this.scaleRadial(this.maxValue) * Math.cos(this.angleSlice * i - Math.PI / 2))
         .attr("y2", (d, i) => this.scaleRadial(this.maxValue) * Math.sin(this.angleSlice * i - Math.PI / 2))
         .attr("class", "line")
-        .style("stroke", "#cdcdcd")
+        .style("stroke", this.props.strokeColor)
         .style("stroke-width", "1px");
 
       if (this.props.axisLabel) {
@@ -256,25 +263,33 @@ class Radar extends Component {
             .attr("cx", (d, i) => config.scaleRadial(d.value) * Math.cos(config.angleSlice * i - Math.PI / 2))
             .attr("cy", (d, i) => config.scaleRadial(d.value) * Math.sin(config.angleSlice * i - Math.PI / 2))
             .style("fill", (d) => d.color)
-            .style("fill-opacity", 0.8)
+            .style("fill-opacity", 1)
+          .select(function() { return this.parentNode; })
+          .append("g")
+            .attr("class", "polygon__active-point-wrapper")
+            .attr("opacity", 0)
+          .append("circle")
+            .attr("class", "polygon__active-point")
+            .attr("r", 20)
+            .attr("cx", (d, i) => config.scaleRadial(parseFloat(d.value) + config.activeDotOffset) * Math.cos(config.angleSlice * i - Math.PI / 2))
+            .attr("cy", (d, i) => config.scaleRadial(parseFloat(d.value) + config.activeDotOffset) * Math.sin(config.angleSlice * i - Math.PI / 2))
+            .style("fill", config.activeDotFillColor)
+            .style("stroke", d => d.color)
+            .style("stroke-width", "1px")
           .select(function() { return this.parentNode; })
           .append("text")
-            .attr("x", (d, i) => {
-              let xPos = config.scaleRadial(d.value) * Math.cos(config.angleSlice * i - Math.PI / 2);
-              if (xPos < 0) {
-                xPos -= 40;
-              } else {
-                xPos += 7;
-              }
-              return xPos;
-            })
-            .attr("y", (d, i) => {
-              let yPos = config.scaleRadial(d.value) * Math.sin(config.angleSlice * i - Math.PI / 2);
-              yPos += 5;
-              return yPos;
-            })
-            .attr("opacity", 0)
-            .text(d => config.Format(d.value));
+            .attr("x", (d, i) => config.scaleRadial(parseFloat(d.value) + config.activeDotOffset) * Math.cos(config.angleSlice * i - Math.PI / 2))
+            .attr("y", (d, i) => config.scaleRadial(parseFloat(d.value) + config.activeDotOffset) * Math.sin(config.angleSlice * i - Math.PI / 2))
+            .style("font-size", "20px")
+            .attr("alignment-baseline", "middle")
+            .style("text-anchor", "middle")
+            .style("fill", d => d.color)
+            .text(d => config.Format(d.value).slice(0, -1))
+          .append("svg:tspan")
+            .style("font-size", "10px")
+            .attr("alignment-baseline", "mathematical")
+            .style("fill", d => d.color)
+            .text("%");;
       });
   }
 
@@ -304,6 +319,10 @@ class Radar extends Component {
     this.config.dotRadius = this.props.dotRadius;
     this.config.canFocus = this.props.canFocus;
     this.config.color = this.props.color;
+    this.config.activeDotOffset = this.props.activeDotOffset;
+    this.config.strokeColor = this.props.strokeColor;
+    this.config.highlightStrokeColor = this.props.highlightStrokeColor;
+    this.config.activeDotFillColor = this.props.activeDotFillColor;
 
     this.svg = d3.select(this.chart).append("svg")
       .attr("width",  this.props.width + this.props.margin.left + this.props.margin.right)
@@ -334,8 +353,7 @@ class Radar extends Component {
   }
 
   updateChart = (data, config) => {
-    this.polygonWrapper
-    .data(data)
+    this.polygonWrapper.data(data)
     .transition().duration(750)
       .attr("points", (d, j) => {
         return d.values.map((val, i) => {
@@ -343,40 +361,28 @@ class Radar extends Component {
         }).join(" ");
       })
     .each(function(d, j) {
+      const newData = d.values.map(val => {
+        return { value: val.value };
+      });
+
       d3.select(this.parentNode).selectAll(".polygon__point")
-        .data((oldD, i) => {
-          const newValues = d.values.map(val => {
-            return { value: val.value };
-          });
-          return newValues;
-        })
+        .data(newData)
         .transition().duration(750)
           .attr("cx", (d, i) => config.scaleRadial(d.value) * Math.cos(config.angleSlice * i - Math.PI / 2))
           .attr("cy", (d, i) => config.scaleRadial(d.value) * Math.sin(config.angleSlice * i - Math.PI / 2));
 
-        d3.select(this.parentNode).selectAll("text")
-          .data((oldD, i) => {
-            const newValues = d.values.map(val => {
-              return { value: val.value };
-            });
-            return newValues;
-          })
-          .transition().duration(750)
-            .attr("x", (d, i) => {
-              let xPos = config.scaleRadial(d.value) * Math.cos(config.angleSlice * i - Math.PI / 2);
-              if (xPos < 0) {
-                xPos -= 40;
-              } else {
-                xPos += 7;
-              }
-              return xPos;
-            })
-            .attr("y", (d, i) => {
-              let yPos = config.scaleRadial(d.value) * Math.sin(config.angleSlice * i - Math.PI / 2);
-              yPos += 5;
-              return yPos;
-            })
-            .text(d => config.Format(d.value));
+      d3.select(this.parentNode).selectAll(".polygon__active-point")
+        .data(newData)
+        .transition().duration(750)
+          .attr("cx", (d, i) => config.scaleRadial(parseFloat(d.value) + config.activeDotOffset) * Math.cos(config.angleSlice * i - Math.PI / 2))
+          .attr("cy", (d, i) => config.scaleRadial(parseFloat(d.value) + config.activeDotOffset) * Math.sin(config.angleSlice * i - Math.PI / 2));
+
+      d3.select(this.parentNode).selectAll(".polygon__active-point-wrapper text")
+        .data(newData)
+        .transition().duration(750)
+          .attr("x", (d, i) => config.scaleRadial(parseFloat(d.value) + config.activeDotOffset) * Math.cos(config.angleSlice * i - Math.PI / 2))
+          .attr("y", (d, i) => config.scaleRadial(parseFloat(d.value) + config.activeDotOffset) * Math.sin(config.angleSlice * i - Math.PI / 2))
+          .text(d => config.Format(d.value));
     });
   }
 

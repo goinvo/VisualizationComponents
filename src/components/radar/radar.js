@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import * as d3 from 'd3';
 
+import NodeGroup from 'react-move/NodeGroup';
+
 
 const setPolygonSelectedState = (polygon, selected, config) => {
   if (selected) {
@@ -67,11 +69,12 @@ class Radar extends Component {
     thresholdUpper: 0.75
   }
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
 
     this.state = {
-      chartRendered: false
+      chartRendered: false,
+      data: props.data || [],
     };
 
     this.config = {};
@@ -87,33 +90,40 @@ class Radar extends Component {
     }
   }
 
-  componentWillReceiveProps(nextProps) {
-    if (nextProps.data.length && this.props.data !== nextProps.data) {
-      if (!this.state.chartRendered) {
-        this.setState({
-          chartRendered: true
-        }, () => {
-          this.renderChart(nextProps.data);
-        });
-      } else {
-        if (this.props.data.length !== nextProps.data.length) {
-          this.renderChart(nextProps.data);
-        } else {
-          this.updateChart(nextProps.data, this.config);
-        }
-      }
-    } else if (this.state.chartRendered && nextProps.data.length < 1) {
-      this.outerGroup.select(".polygon-wrapper").remove();
-    } else if (this.state.chartRendered && nextProps.width !== this.props.width) {
-      this.renderChart(nextProps.data);
-    }
-  }
+  // componentWillReceiveProps(nextProps) {
+  //   if (nextProps.data.length && this.props.data !== nextProps.data) {
+  //     if (!this.state.chartRendered) {
+  //       this.setState({
+  //         chartRendered: true
+  //       }, () => {
+  //         this.renderChart(nextProps.data);
+  //       });
+  //     } else {
+  //       if (this.props.data.length !== nextProps.data.length) {
+  //         this.renderChart(nextProps.data);
+  //       } else {
+  //         this.updateChart(nextProps.data, this.config);
+  //       }
+  //     }
+  //   } else if (this.state.chartRendered && nextProps.data.length < 1) {
+  //     this.outerGroup.select(".polygon-wrapper").remove();
+  //   } else if (this.state.chartRendered && nextProps.width !== this.props.width) {
+  //     this.renderChart(nextProps.data);
+  //   }
+  // }
+  //
+  // componentDidUpdate(prevProps, prevState) {
+  //   if (prevProps.highlight !== this.props.highlight) {
+  //     this.renderChart(this.props.data);
+  //   } else if (prevProps.type !== this.props.type) {
+  //     this.renderChart(this.props.data);
+  //   }
+  // }
 
-  componentDidUpdate(prevProps, prevState) {
-    if (prevProps.highlight !== this.props.highlight) {
-      this.renderChart(this.props.data);
-    } else if (prevProps.type !== this.props.type) {
-      this.renderChart(this.props.data);
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.data !== this.props.data) {
+      console.log("NEW DATA");
+      this.setState({ data: nextProps.data });
     }
   }
 
@@ -438,8 +448,89 @@ class Radar extends Component {
   }
 
   render() {
+    let maxValue, allAxis, radius, rangeBottom, angleSlice, scaleRadial;
+
+    if (this.state.data.length) {
+      maxValue = Math.max(this.props.maxValue, d3.max(this.state.data, item => {
+        return d3.max(item.values, value => value.value);
+      }));
+
+      // NOTE: data[0] means currently this code assumes all entries have the same axis data
+      allAxis = (this.state.data[0].values.map(function(val) { return val.label } ));  //Names of each axis
+      radius = Math.min( (this.props.width / 2), (this.props.height / 2) );  //Radius of the outermost circle
+      rangeBottom = 0;
+      if (this.props.type === 'hgraph') {
+        rangeBottom = radius / 2.5;
+      }
+      // const Format = d3.format('.0%');  //Percentage formatting
+      angleSlice = (Math.PI * 2) / allAxis.length;  //The width in radians of each "slice"
+
+      scaleRadial = d3.scaleLinear()
+        .range([rangeBottom, radius])
+        .domain([0, maxValue]);
+    }
+
+    const assemblePoints = (values) => {
+      let str = "";
+      values.forEach((val, i) => {
+        str += `${scaleRadial(val.value) * Math.cos(angleSlice * i - Math.PI / 2)},${scaleRadial(val.value) * Math.sin(angleSlice * i - Math.PI / 2)} `;
+      });
+      return str;
+    }
+
     return(
-      <div ref={node => this.chart = node} className="vis vis--radar"></div>
+      <div>
+        <div ref={node => this.chart = node} className="vis vis--radar"></div>
+        {
+          this.state.data.length ?
+            <svg
+              width={ this.props.width + this.props.margin.left + this.props.margin.right }
+              height={ this.props.height + this.props.margin.top + this.props.margin.bottom }>
+              <g
+                transform={ "translate(" + ((this.props.width / 2) + this.props.margin.left) + "," + ((this.props.height / 2) + this.props.margin.top) + ")" }>
+                <NodeGroup
+                  data={ this.state.data }
+                  keyAccessor={ (d) => d.id }
+
+                  start={(data, index) => ({
+                    points: assemblePoints(data.values)
+                  })}
+
+                  enter={(data, index) => ({
+                    points: assemblePoints(data.values)
+                  })}
+
+                  update={(data, index) => ({
+                    points: [assemblePoints(data.values)],
+                    timing: { duration: 750, ease: d3.easeExpOut }
+                  })}
+                >
+                  {(nodes) => {
+                    return (
+                      <g>
+                        {nodes.map(({ key, data, state }) => {
+                          return (
+                            <g className="polygon-wrapper" key={ key }>
+                              <polygon
+                                className="polygon"
+                                points={ state.points }
+                                stroke={ data.color }
+                                strokeWidth={ this.props.strokeWidth }
+                                fill={ data.color }
+                                fillOpacity={ this.props.opacityArea }>
+                              </polygon>
+                            </g>
+                          );
+                        })}
+                      </g>
+                    );
+                  }}
+                </NodeGroup>
+              </g>
+            </svg>
+          : null
+        }
+      </div>
     )
   }
 }

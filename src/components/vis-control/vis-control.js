@@ -50,6 +50,9 @@ class VisControl extends Component {
             dotRadius={ 2 }
             canFocus={ false }
             highlight={ this.state.isChecked }
+            showScore={ this.props.showScore }
+            scoreSize={ this.props.scoreSize }
+            scoreColor={ this.props.scoreColor }
           />
         </div>
         <span className="vis-control__label">{ this.props.label }</span>

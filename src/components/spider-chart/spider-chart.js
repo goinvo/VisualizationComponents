@@ -29,6 +29,8 @@ class SpiderChart extends Component {
     strokeColor: '#eaeaea',
     highlightStrokeColor: '#8F85FF',
     canFocus: true,
+    showScore: false,
+    scoreSize: "80px",
     color: d3.scaleOrdinal(d3.schemeCategory10),
     thresholdLower: 0.25,
     thresholdUpper: 0.75
@@ -245,7 +247,7 @@ class SpiderChart extends Component {
     )
   }
 
-  renderPolygons = (data) => {
+  renderPolygon = (data) => {
     return (
       <NodeGroup
         data={ [data] }
@@ -323,7 +325,7 @@ class SpiderChart extends Component {
               cy: [d.cy],
               activeCx: [d.activeX],
               activeCy: [d.activeY],
-              color: this.thresholdColor(d),
+              color: [this.thresholdColor(d)],
               timing: { duration: 750, ease: d3.easeExp }
             },
             {
@@ -384,6 +386,10 @@ class SpiderChart extends Component {
   }
 
   render() {
+    const sortedData = this.state.data.sort((a, b) => {
+      return (a.id === this.state.activeNodeId)-(b.id === this.state.activeNodeId);
+    });
+
     return(
       <div>
           <svg
@@ -406,11 +412,25 @@ class SpiderChart extends Component {
               </g>
               <g className="polygons-container">
                 {
-                  this.state.data.map(d => {
+                  sortedData.map(d => {
                     return (
                       <g className="polygon-wrapper" key={ d.id }>
-                        { this.renderPolygons(d) }
+                        { this.renderPolygon(d) }
                         { this.renderPoints(d) }
+                        {
+                          this.props.showScore && (this.state.data.length === 1 || d.id === this.state.activeNodeId) ?
+                            <text
+                              x="0"
+                              y="0"
+                              dy={ parseInt(parseInt(this.props.scoreSize) / 3) + "px" }
+                              textAnchor="middle"
+                              fontSize={ this.props.scoreSize }
+                              fontWeight="bold"
+                              fill={ this.props.scoreColor || d.color }>
+                                { d.score }
+                            </text>
+                          : null
+                        }
                       </g>
                     )
                   })

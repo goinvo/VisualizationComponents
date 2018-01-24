@@ -130,8 +130,12 @@ class App extends Component {
   }
 
   assembleRadarData = () => {
-    return this.getActivepatients().map(patient => {
+    const data = this.getActivepatients().map(patient => {
       return this.assembleRadarDataObjectFor(patient.id, this.state.activeYear, this.state.activeMonth);
+    });
+
+    return data.sort((a, b) => {
+      return b.score - a.score
     });
   }
 
@@ -153,7 +157,8 @@ class App extends Component {
       id: patientId,
       legendLabel: patientData.patient,
       color: patientData.color,
-      values: valuesForPatient
+      values: valuesForPatient,
+      score: parseInt(d3.mean(valuesForPatient, val => val.value) * 100, 10)
     };
   }
 
@@ -227,7 +232,9 @@ class App extends Component {
               height={ size }
               type={ this.state.visType.value }
               axes={ this.state.visType.value === 'hgraph' ? false : true }
-              levelLabel={ this.state.visType.value === 'hgraph' ? false : true }/>
+              levelLabel={ this.state.visType.value === 'hgraph' ? false : true }
+              showScore={ true }
+              scoreColor="#000" />
             <div className="vis-container__controls-container">
               <div className={ `vis-container__date-controls ${sizeBasedOnWindow < breakpoint ? 'vis-container__date-controls--mobile ' : ''}` }>
                 <p className="label">Time period</p>
@@ -247,6 +254,7 @@ class App extends Component {
                     <VisControlGroup
                       type="checkbox"
                       visType={ this.state.visType.value }
+                      showScore={ true }
                       stacked={ true }
                       blockLabel={ true }
                       controls={ this.state.patientData }
@@ -263,6 +271,9 @@ class App extends Component {
                 <VisControlGroup
                   type="checkbox"
                   visType={ this.state.visType.value }
+                  showScore={ true }
+                  scoreSize="20px"
+                  scoreColor="#000"
                   stacked={ true }
                   controls={ this.state.patientData }
                   onChange={ this.handlePatientControlListChange } />

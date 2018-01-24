@@ -50,7 +50,10 @@ class VisControlGroup extends Component {
                   checked={ control.checked }
                   onChange={ this.handleControlChange }
                   visData={ control.data }
-                  visType={ this.props.visType } />
+                  visType={ this.props.visType }
+                  showScore={ this.props.showScore }
+                  scoreSize={ this.props.scoreSize }
+                  scoreColor={ this.props.scoreColor } />
               </li>
             )
           })

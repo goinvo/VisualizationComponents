@@ -42,37 +42,35 @@ class SpiderChart extends Component {
       activeNodeId: ''
     };
 
+    this.Format = d3.format('.0%');
+
     if (props.data) {
-      this.initConfig(props.data);
+      this.initConfig(props);
     }
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.data !== this.props.data) {
-      this.initConfig(nextProps.data);
+    // TODO: There may be a way to refine this a bit to occur less often
+    if (nextProps !== this.props) {
+      this.initConfig(nextProps);
       this.setState({ data: nextProps.data });
     }
   }
 
-  initConfig = (data) => {
-    this.Format = d3.format('.0%');
-
-    this.maxValue = Math.max(this.props.maxValue, d3.max(data, item => {
+  initConfig = (props) => {
+    this.maxValue = Math.max(props.maxValue, d3.max(props.data, item => {
       return d3.max(item.values, value => value.value);
     }));
 
     // NOTE: data[0] means currently this code assumes all entries have the same axis data
-    if (data.length) {
-      this.allAxis = data[0].values.map(val => val.label);  // Names of each axis
+    if (props.data.length) {
+      this.allAxis = props.data[0].values.map(val => val.label);  // Names of each axis
     } else {
       this.allAxis = [];
     }
-    this.radius = Math.min( (this.props.width / 2), (this.props.height / 2) );  // Radius of the outermost circle
-    this.rangeBottom = 0;
-    if (this.props.type === CONSTANTS.hgraph) {
-      this.rangeBottom = this.radius / 2.5;
-    }
 
+    this.radius = Math.min((props.width / 2), (props.height / 2));  // Radius of the outermost circle
+    this.rangeBottom = props.type === CONSTANTS.hgraph ? this.radius / 2.5 : 0;
     this.angleSlice = (Math.PI * 2) / this.allAxis.length;  // The width in radians of each "slice"
 
     this.scaleRadial = d3.scaleLinear()

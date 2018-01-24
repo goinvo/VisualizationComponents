@@ -45,9 +45,8 @@ class Radar extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    this.initConfig(nextProps.data);
-
     if (nextProps.data !== this.props.data) {
+      this.initConfig(nextProps.data);
       this.setState({ data: nextProps.data });
     }
   }
@@ -86,30 +85,21 @@ class Radar extends Component {
     }
   }
 
-  assemblePoints = (data) => {
-    return data.values.map((val, i) => {
-      return {
-        key: val.label.replace(/\s/g,''),
-        x: this.scaleRadial(val.value) * Math.cos(this.angleSlice * i - Math.PI / 2),
-        y: this.scaleRadial(val.value) * Math.sin(this.angleSlice * i - Math.PI / 2),
-        color: data.color
-      };
-    });
-  }
-
-  assembleActivePoints = (data) => {
+  assemblePointsData = (data) => {
     return data.values.map((val, i) => {
       return {
         key: val.label.replace(/\s/g,''),
         value: val.value,
-        x: this.scaleRadial(parseFloat(val.value) + this.props.activeDotOffset) * Math.cos(this.angleSlice * i - Math.PI / 2),
-        y: this.scaleRadial(parseFloat(val.value) + this.props.activeDotOffset) * Math.sin(this.angleSlice * i - Math.PI / 2),
+        cx: this.scaleRadial(val.value) * Math.cos(this.angleSlice * i - Math.PI / 2),
+        cy: this.scaleRadial(val.value) * Math.sin(this.angleSlice * i - Math.PI / 2),
+        activeX: this.scaleRadial(parseFloat(val.value) + this.props.activeDotOffset) * Math.cos(this.angleSlice * i - Math.PI / 2),
+        activeY: this.scaleRadial(parseFloat(val.value) + this.props.activeDotOffset) * Math.sin(this.angleSlice * i - Math.PI / 2),
         color: data.color
       };
     });
   }
 
-  assemblePointsStr = (data) => {
+  assemblePointsDataStr = (data) => {
     let str = "";
     data.values.forEach((val, i) => {
       str += `${this.scaleRadial(val.value) * Math.cos(this.angleSlice * i - Math.PI / 2)},${this.scaleRadial(val.value) * Math.sin(this.angleSlice * i - Math.PI / 2)} `;
@@ -123,20 +113,20 @@ class Radar extends Component {
         data={ [data] }
         keyAccessor={ (d) => d.id }
         start={(data, index) => ({
-          pointsStr: this.assemblePointsStr(data),
+          pointsStr: this.assemblePointsDataStr(data),
           fillOpacity: data.id === this.state.activeNodeId ? .7 : this.props.opacityArea
         })}
         enter={(data, index) => ({
-          pointsStr: this.assemblePointsStr(data),
+          pointsStr: this.assemblePointsDataStr(data),
           fillOpacity: data.id === this.state.activeNodeId ? .7 : this.props.opacityArea
         })}
         update={(data, index) => ([
           {
-            pointsStr: [this.assemblePointsStr(data)],
+            pointsStr: [this.assemblePointsDataStr(data)],
             timing: { duration: 750, ease: d3.easeExp }
           },
           {
-            fillOpacity: data.id === this.state.activeNodeId ? .7 : this.props.opacityArea,
+            fillOpacity: [data.id === this.state.activeNodeId ? .7 : this.props.opacityArea],
             timing: { duration: 250, ease: d3.easeExp }
           }
         ])}
@@ -154,7 +144,7 @@ class Radar extends Component {
                       strokeWidth={ this.props.strokeWidth }
                       fill={ data.color }
                       fillOpacity={ state.fillOpacity }
-                      filter="url(#glow)"
+                      // filter="url(#glow)"
                       onClick={ this.handlePolygonClick(data) }>
                     </polygon>
                   </g>
@@ -171,69 +161,32 @@ class Radar extends Component {
     return (
       <g className="polygon__points-wrapper">
         <NodeGroup
-          data={ this.assemblePoints(data) }
-          keyAccessor={ (d) => d.key }
-          start={(data, index) => ({
-            cx: data.x,
-            cy: data.y
-          })}
-          enter={(data, index) => ({
-            cx: data.x,
-            cy: data.y
-          })}
-          update={(data, index) => ({
-            cx: [data.x],
-            cy: [data.y],
-            timing: { duration: 750, ease: d3.easeExp }
-          })}
-        >
-          {(nodes) => {
-            return (
-              <g>
-                {nodes.map(({ key, data, state }) => {
-                  return (
-                    <circle
-                      key={ data.key }
-                      className="polygon__point"
-                      r="4"
-                      cx={ state.cx }
-                      cy={ state.cy }
-                      fill={ data.color }>
-                    </circle>
-                  )
-                })}
-              </g>
-            );
-          }}
-        </NodeGroup>
-      </g>
-    );
-  }
-
-  renderActivePoints = (data) => {
-    return (
-      <g className="polygon__active-points-wrapper">
-        <NodeGroup
-          data={ this.assembleActivePoints(data) }
+          data={ this.assemblePointsData(data) }
           keyAccessor={ (d) => d.key }
           start={(d, index) => ({
-            cx: d.x,
-            cy: d.y,
-            opacity: this.state.activeNodeId === data.id ? 1 : 0,
+            cx: d.cx,
+            cy: d.cy,
+            activeCx: d.activeX,
+            activeCy: d.activeY,
+            activeOpacity: this.state.activeNodeId === data.id ? 1 : 0
           })}
           enter={(d, index) => ({
-            cx: d.x,
-            cy: d.y,
-            opacity: this.state.activeNodeId === data.id ? 1 : 0
+            cx: d.cx,
+            cy: d.cy,
+            activeCx: d.activeX,
+            activeCy: d.activeY,
+            activeOpacity: this.state.activeNodeId === data.id ? 1 : 0
           })}
           update={(d, index) => ([
             {
-              cx: [d.x],
-              cy: [d.y],
+              cx: [d.cx],
+              cy: [d.cy],
+              activeCx: [d.activeX],
+              activeCy: [d.activeY],
               timing: { duration: 750, ease: d3.easeExp }
             },
             {
-              opacity: [this.state.activeNodeId === data.id ? 1 : 0],
+              activeOpacity: [this.state.activeNodeId === data.id ? 1 : 0],
               timing: { duration: 250, ease: d3.easeExp }
             }
           ])}
@@ -243,33 +196,41 @@ class Radar extends Component {
               <g>
                 {nodes.map(({ key, data, state }) => {
                   return (
-                    <g key={ data.key } opacity={ state.opacity }>
+                    <g key={ data.key }>
                       <circle
                         className="polygon__point"
-                        r="20"
+                        r="4"
                         cx={ state.cx }
                         cy={ state.cy }
-                        fill={ this.props.activeDotFillColor }
-                        stroke={ data.color }
-                        strokeWidth="1px">
-                      </circle>
-                      <text
-                        x={ state.cx }
-                        y={ state.cy }
-                        fontSize="20px"
                         fill={ data.color }>
-                        <tspan
-                          alignmentBaseline="middle"
-                          textAnchor="middle">
-                          { this.Format(data.value).slice(0, -1) }
-                        </tspan>
-                        <tspan
-                          alignmentBaseline="middle"
-                          textAnchor="middle"
-                          fontSize="10px">
-                          %
-                        </tspan>
-                      </text>
+                      </circle>
+                      <g opacity={ state.activeOpacity } className="polygon__active-point-wrapper">
+                        <circle
+                          r="20"
+                          cx={ state.activeCx }
+                          cy={ state.activeCy }
+                          fill={ this.props.activeDotFillColor }
+                          stroke={ data.color }
+                          strokeWidth="1px">
+                        </circle>
+                        <text
+                          x={ state.activeCx }
+                          y={ state.activeCy }
+                          fontSize="20px"
+                          fill={ data.color }>
+                          <tspan
+                            alignmentBaseline="middle"
+                            textAnchor="middle">
+                            { this.Format(data.value).slice(0, -1) }
+                          </tspan>
+                          <tspan
+                            alignmentBaseline="middle"
+                            textAnchor="middle"
+                            fontSize="10px">
+                            %
+                          </tspan>
+                        </text>
+                      </g>
                     </g>
                   )
                 })}
@@ -305,7 +266,6 @@ class Radar extends Component {
                       <g className="polygon-wrapper" key={ d.id }>
                         { this.renderPolygons(d) }
                         { this.renderPoints(d) }
-                        { this.renderActivePoints(d) }
                       </g>
                     )
                   })

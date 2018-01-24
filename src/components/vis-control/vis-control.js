@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 
-import Radar from '../radar/radar';
+import SpiderChart from '../spider-chart/spider-chart';
 
 class VisControl extends Component {
   constructor(props) {
@@ -37,7 +37,7 @@ class VisControl extends Component {
           value={ this.props.label }
           onChange={ this.handleChange } />
         <div className="vis-control__vis">
-          <Radar
+          <SpiderChart
             type={ this.props.visType }
             data={ this.props.visData }
             width={ 50 }

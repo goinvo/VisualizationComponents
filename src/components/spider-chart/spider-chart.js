@@ -1,12 +1,15 @@
 import React, { Component } from 'react';
 import * as d3 from 'd3';
-
+import _ from 'lodash';
+import Text from 'react-svg-text';
 import NodeGroup from 'react-move/NodeGroup';
 
-class Radar extends Component {
+import * as CONSTANTS from '../../constants/chart-types';
+
+class SpiderChart extends Component {
 
   static defaultProps = {
-    type: 'radar',
+    type: CONSTANTS.spider,
     width: 500,
     height: 500,
     margin: { top: 50, right: 50, bottom: 50, left: 50 },
@@ -60,17 +63,17 @@ class Radar extends Component {
 
     // NOTE: data[0] means currently this code assumes all entries have the same axis data
     if (data.length) {
-      this.allAxis = data[0].values.map(val => val.label);  //Names of each axis
+      this.allAxis = data[0].values.map(val => val.label);  // Names of each axis
     } else {
       this.allAxis = [];
     }
-    this.radius = Math.min( (this.props.width / 2), (this.props.height / 2) );  //Radius of the outermost circle
+    this.radius = Math.min( (this.props.width / 2), (this.props.height / 2) );  // Radius of the outermost circle
     this.rangeBottom = 0;
-    if (this.props.type === 'hgraph') {
+    if (this.props.type === CONSTANTS.hgraph) {
       this.rangeBottom = this.radius / 2.5;
     }
-    // const Format = d3.format('.0%');  //Percentage formatting
-    this.angleSlice = (Math.PI * 2) / this.allAxis.length;  //The width in radians of each "slice"
+
+    this.angleSlice = (Math.PI * 2) / this.allAxis.length;  // The width in radians of each "slice"
 
     this.scaleRadial = d3.scaleLinear()
       .range([this.rangeBottom, this.radius])
@@ -78,6 +81,7 @@ class Radar extends Component {
   }
 
   handlePolygonClick = (data) => (e) => {
+    e.stopPropagation();
     if (data.id === this.state.activeNodeId) {
       this.setState({ activeNodeId: '' });
     } else {
@@ -105,6 +109,142 @@ class Radar extends Component {
       str += `${this.scaleRadial(val.value) * Math.cos(this.angleSlice * i - Math.PI / 2)},${this.scaleRadial(val.value) * Math.sin(this.angleSlice * i - Math.PI / 2)} `;
     });
     return str;
+  }
+
+  thresholdColor = (d) => {
+    if (this.props.type === CONSTANTS.hgraph) {
+      return (d.value < this.props.thresholdLower || d.value > this.props.thresholdUpper) ? 'red' : d.color;
+    } else {
+      return d.color;
+    }
+  }
+
+  renderLevels = () => {
+    if (this.props.type === CONSTANTS.spider) {
+      return (
+        <g
+          transform={ `translate(${ -(this.props.width / 2) }, ${ -(this.props.height / 2) })` }>
+          {_.times(this.props.levels, (level) => {
+            const levelFactor = this.radius * ((level + 1) / this.props.levels);
+            return (
+              this.allAxis.map((axis, i) => {
+                return (
+                  <line
+                    key={ axis }
+                    x1={ levelFactor * (1 - Math.sin(i * this.angleSlice)) }
+                    y1={ levelFactor * (1 - Math.cos(i * this.angleSlice)) }
+                    x2={ levelFactor * (1 - Math.sin((i + 1) * this.angleSlice)) }
+                    y2={ levelFactor * (1 - Math.cos((i + 1) * this.angleSlice)) }
+                    transform={ `translate(${ this.props.width / 2 - levelFactor }, ${ this.props.height / 2 - levelFactor })` }
+                    stroke={ this.props.highlight ? this.props.highlightStrokeColor : this.props.strokeColor }
+                    strokeWidth={ this.props.highlight ? "2px" : "1px" }>
+                  </line>
+                )
+              })
+            )
+          })}
+        </g>
+      )
+    } else if (this.props.type === CONSTANTS.radar) {
+      const levels = d3.range(1, (this.props.levels + 1)).reverse();
+      return (
+        levels.map((level, i) => {
+          return (
+            <circle
+              key={ level }
+              r={ this.radius / this.props.levels * level }
+              fill={ this.props.highlight ? this.props.highlightStrokeColor : this.props.strokeColor }
+              fillOpacity={ this.props.levelsOpacity }
+              stroke={ this.props.highlight ? this.props.highlightStrokeColor : this.props.strokeColor }>
+              { /* filter="url(#glow)"> */ }
+            </circle>
+          )
+        })
+      )
+    } else if (this.props.type === CONSTANTS.hgraph) {
+      const tau = 2 * Math.PI;
+      const arc = d3.arc()
+        .outerRadius(this.scaleRadial(this.props.thresholdUpper))
+        .innerRadius(this.scaleRadial(this.props.thresholdLower))
+        .startAngle(0)
+        .endAngle(tau);
+      return (
+        <path
+          d={ arc() }
+          fill={ this.props.highlight ? this.props.highlightStrokeColor : "green" }
+          fillOpacity={ this.props.highlight ? .75 : .25 }>
+        </path>
+      )
+    }
+  }
+
+  renderLevelLabels = () => {
+    const levels = d3.range(1, (this.props.levels + 1)).reverse();
+    return (
+      <g>
+        {levels.map((level, i) => {
+          return (
+            <text
+              key={ level }
+              x="4"
+              y={ (-level * this.radius / this.props.levels) }
+              dy=".35em"
+              fontSize="10px"
+              fill="#737373">
+              { this.Format(this.maxValue * level / this.props.levels) }
+            </text>
+          )
+        })}
+      </g>
+    )
+  }
+
+  renderAxesParts = () => {
+    return (
+      <g>
+        {this.allAxis.map((axis, i) => {
+          return (
+            <g key={ axis }>
+              {
+                this.props.axes ?
+                  <line
+                    x1={ this.scaleRadial(0) * Math.cos(this.angleSlice * i - Math.PI / 2) }
+                    y1={ this.scaleRadial(0) * Math.sin(this.angleSlice * i - Math.PI / 2) }
+                    x2={ this.scaleRadial(this.maxValue) * Math.cos(this.angleSlice * i - Math.PI / 2) }
+                    y2={ this.scaleRadial(this.maxValue) * Math.sin(this.angleSlice * i - Math.PI / 2) }
+                    stroke={ this.props.strokeColor }
+                    strokeWidth="1px">
+                  </line>
+                : null
+              }
+              {
+                this.props.axisLabel ?
+                  <Text
+                    x={ this.scaleRadial(this.maxValue * this.props.labelOffset) * Math.cos(this.angleSlice * i - Math.PI / 2) }
+                    y={ this.scaleRadial(this.maxValue * this.props.labelOffset) * Math.sin(this.angleSlice * i - Math.PI / 2) }
+                    dy=".35em"
+                    fontSize="12px"
+                    textAnchor="middle"
+                    width={ this.props.wrapWidth }>
+                    { axis }
+                  </Text>
+                : null
+              }
+            </g>
+          )
+        })}
+      </g>
+    )
+  }
+
+  renderAxes = () => {
+    return (
+      <g>
+        { this.props.levels > 0 ? this.renderLevels() : null }
+        { this.props.levelLabel ? this.renderLevelLabels() : null }
+        { this.props.axes || this.props.axisLabel ? this.renderAxesParts() : null }
+      </g>
+    )
   }
 
   renderPolygons = (data) => {
@@ -168,6 +308,7 @@ class Radar extends Component {
             cy: d.cy,
             activeCx: d.activeX,
             activeCy: d.activeY,
+            color: this.thresholdColor(d),
             activeOpacity: this.state.activeNodeId === data.id ? 1 : 0
           })}
           enter={(d, index) => ({
@@ -175,6 +316,7 @@ class Radar extends Component {
             cy: d.cy,
             activeCx: d.activeX,
             activeCy: d.activeY,
+            color: this.thresholdColor(d),
             activeOpacity: this.state.activeNodeId === data.id ? 1 : 0
           })}
           update={(d, index) => ([
@@ -183,6 +325,7 @@ class Radar extends Component {
               cy: [d.cy],
               activeCx: [d.activeX],
               activeCy: [d.activeY],
+              color: this.thresholdColor(d),
               timing: { duration: 750, ease: d3.easeExp }
             },
             {
@@ -199,10 +342,10 @@ class Radar extends Component {
                     <g key={ data.key }>
                       <circle
                         className="polygon__point"
-                        r="4"
+                        r={ this.props.dotRadius }
                         cx={ state.cx }
                         cy={ state.cy }
-                        fill={ data.color }>
+                        fill={ state.color }>
                       </circle>
                       <g opacity={ state.activeOpacity } className="polygon__active-point-wrapper">
                         <circle
@@ -210,14 +353,14 @@ class Radar extends Component {
                           cx={ state.activeCx }
                           cy={ state.activeCy }
                           fill={ this.props.activeDotFillColor }
-                          stroke={ data.color }
+                          stroke={ state.color }
                           strokeWidth="1px">
                         </circle>
                         <text
                           x={ state.activeCx }
                           y={ state.activeCy }
                           fontSize="20px"
-                          fill={ data.color }>
+                          fill={ state.color }>
                           <tspan
                             alignmentBaseline="middle"
                             textAnchor="middle">
@@ -247,7 +390,8 @@ class Radar extends Component {
       <div>
           <svg
             width={ this.props.width + this.props.margin.left + this.props.margin.right }
-            height={ this.props.height + this.props.margin.top + this.props.margin.bottom }>
+            height={ this.props.height + this.props.margin.top + this.props.margin.bottom }
+            onClick={ this.handlePolygonClick({ id: '' }) }>
             <defs>
               <filter id="glow">
                 <feGaussianBlur stdDeviation="2" result="coloredBlur" />
@@ -259,6 +403,9 @@ class Radar extends Component {
             </defs>
             <g
               transform={ "translate(" + ((this.props.width / 2) + this.props.margin.left) + "," + ((this.props.height / 2) + this.props.margin.top) + ")" }>
+              <g className="axis-container">
+                { this.renderAxes() }
+              </g>
               <g className="polygons-container">
                 {
                   this.state.data.map(d => {
@@ -278,4 +425,4 @@ class Radar extends Component {
   }
 }
 
-export default Radar;
+export default SpiderChart;

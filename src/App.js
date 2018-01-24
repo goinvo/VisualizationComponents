@@ -3,8 +3,10 @@ import * as d3 from 'd3';
 import _ from 'lodash';
 import Select from 'react-select';
 
+import * as CONSTANTS from './constants/chart-types';
+
 import VisControlGroup from './components/vis-control-group/vis-control-group';
-import Radar from './components/radar/radar';
+import SpiderChart from './components/spider-chart/spider-chart';
 
 import data from './data/data.json';
 
@@ -13,15 +15,15 @@ import './App.css';
 
 const visTypes = [
   {
-    value: 'radar',
-    label: 'Radar'
-  },
-  {
-    value: 'spider',
+    value: CONSTANTS.spider,
     label: 'Spider'
   },
   {
-    value: 'hgraph',
+    value: CONSTANTS.radar,
+    label: 'Radar'
+  },
+  {
+    value: CONSTANTS.hgraph,
     label: 'hGraph'
   }
 ];
@@ -39,7 +41,7 @@ class App extends Component {
       patientData: [],
       dateData: [],
       radarData: [],
-      visType: visTypes[2]
+      visType: visTypes[0]
     }
 
     this.color = d3.scaleOrdinal(d3.schemeCategory10);
@@ -219,7 +221,7 @@ class App extends Component {
         </div>
         <div className="vis-container">
           <div className="vis-container__main">
-            <Radar
+            <SpiderChart
               data={ this.state.radarData }
               width={ size }
               height={ size }

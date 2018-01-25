@@ -222,6 +222,7 @@ class App extends Component {
             onChange={ this.handleVisSelectChange }
             options={ visTypes }
             clearable={ false }
+            searchable={ false }
           />
         </div>
         <div className="vis-container">
@@ -233,7 +234,8 @@ class App extends Component {
               type={ this.state.visType.value }
               axes={ this.state.visType.value === 'hgraph' ? false : true }
               levelLabel={ this.state.visType.value === 'hgraph' ? false : true }
-              showScore={ true }
+              dotRadius={ this.state.visType.value === CONSTANTS.hgraph ? 7 : 4 }
+              showScore={ this.state.visType.value === CONSTANTS.hgraph }
               scoreColor="#000" />
             <div className="vis-container__controls-container">
               <div className={ `vis-container__date-controls ${sizeBasedOnWindow < breakpoint ? 'vis-container__date-controls--mobile ' : ''}` }>
@@ -255,6 +257,8 @@ class App extends Component {
                       type="checkbox"
                       visType={ this.state.visType.value }
                       showScore={ true }
+                      scoreSize="16px"
+                      scoreColor="#000"
                       stacked={ true }
                       blockLabel={ true }
                       controls={ this.state.patientData }
@@ -272,7 +276,7 @@ class App extends Component {
                   type="checkbox"
                   visType={ this.state.visType.value }
                   showScore={ true }
-                  scoreSize="20px"
+                  scoreSize="16px"
                   scoreColor="#000"
                   stacked={ true }
                   controls={ this.state.patientData }

@@ -20,7 +20,6 @@ class SpiderChart extends Component {
     maxValue: 1,
     labelOffset: 1.1,
     activeDotOffset: 0.025,
-    activeDotFillColor: '#fff',
     wrapWidth: 60,
     opacityArea: 0.25,
     dotRadius: 4,
@@ -281,7 +280,8 @@ class SpiderChart extends Component {
                       className="polygon"
                       points={ state.pointsStr }
                       stroke={ data.color }
-                      strokeWidth={ this.props.strokeWidth }
+                      strokeWidth={ this.props.type === CONSTANTS.hgraph ? 0 : this.props.strokeWidth }
+                      // strokeWidth={0}
                       fill={ data.color }
                       fillOpacity={ state.fillOpacity }
                       // filter="url(#glow)"
@@ -308,6 +308,7 @@ class SpiderChart extends Component {
             cy: d.cy,
             activeCx: d.activeX,
             activeCy: d.activeY,
+            dotRadius: this.props.dotRadius,
             color: this.thresholdColor(d),
             activeOpacity: this.state.activeNodeId === data.id ? 1 : 0
           })}
@@ -316,6 +317,7 @@ class SpiderChart extends Component {
             cy: d.cy,
             activeCx: d.activeX,
             activeCy: d.activeY,
+            dotRadius: this.props.dotRadius,
             color: this.thresholdColor(d),
             activeOpacity: this.state.activeNodeId === data.id ? 1 : 0
           })}
@@ -325,6 +327,7 @@ class SpiderChart extends Component {
               cy: [d.cy],
               activeCx: [d.activeX],
               activeCy: [d.activeY],
+              dotRadius: [this.props.dotRadius],
               color: [this.thresholdColor(d)],
               timing: { duration: 750, ease: d3.easeExp }
             },
@@ -342,7 +345,7 @@ class SpiderChart extends Component {
                     <g key={ data.key }>
                       <circle
                         className="polygon__point"
-                        r={ this.props.dotRadius }
+                        r={ state.dotRadius }
                         cx={ state.cx }
                         cy={ state.cy }
                         fill={ state.color }>
@@ -352,15 +355,13 @@ class SpiderChart extends Component {
                           r="20"
                           cx={ state.activeCx }
                           cy={ state.activeCy }
-                          fill={ this.props.activeDotFillColor }
-                          stroke={ state.color }
-                          strokeWidth="1px">
+                          fill={ state.color }>
                         </circle>
                         <text
                           x={ state.activeCx }
                           y={ state.activeCy }
                           fontSize="20px"
-                          fill={ state.color }>
+                          fill="#fff">
                           <tspan
                             alignmentBaseline="middle"
                             textAnchor="middle">
@@ -422,7 +423,7 @@ class SpiderChart extends Component {
                             <text
                               x="0"
                               y="0"
-                              dy={ parseInt(parseInt(this.props.scoreSize) / 3) + "px" }
+                              dy={ parseInt(parseInt(this.props.scoreSize) / 2.5) + "px" }
                               textAnchor="middle"
                               fontSize={ this.props.scoreSize }
                               fontWeight="bold"

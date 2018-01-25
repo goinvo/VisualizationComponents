@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import * as d3 from 'd3';
+import * as colorScale from 'd3-scale-chromatic';
 import _ from 'lodash';
 
 import * as CONSTANTS from './constants/chart-types';
@@ -9,7 +10,6 @@ import SpiderChart from './components/spider-chart/spider-chart';
 
 import data from './data/data.json';
 
-import 'react-select/dist/react-select.css';
 import './App.css';
 
 const visTypes = [
@@ -41,10 +41,10 @@ class App extends Component {
       dateData: [],
       radarData: [],
       visTypes: visTypes,
-      visType: visTypes[0]
+      visType: visTypes[2]
     }
 
-    this.color = d3.scaleOrdinal(d3.schemeCategory10);
+    this.color = d3.scaleOrdinal(colorScale.schemeDark2);
   }
 
   componentDidMount() {
@@ -239,8 +239,9 @@ class App extends Component {
               height={ size }
               type={ this.state.visType.value }
               axes={ this.state.visType.value === 'hgraph' ? false : true }
+              labelOffset={ size < 300 ? 1.2 : 1.1 }
               levelLabel={ this.state.visType.value === 'hgraph' ? false : true }
-              dotRadius={ this.state.visType.value === CONSTANTS.hgraph ? 7 : 4 }
+              dotRadius={ this.state.visType.value === CONSTANTS.hgraph ? 10 : 4 }
               showScore={ this.state.visType.value === CONSTANTS.hgraph }
               scoreColor="#000" />
             <div className="vis-container__controls-container">

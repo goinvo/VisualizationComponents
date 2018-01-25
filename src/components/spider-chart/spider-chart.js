@@ -112,7 +112,7 @@ class SpiderChart extends Component {
 
   thresholdColor = (d) => {
     if (this.props.type === CONSTANTS.hgraph) {
-      return (d.value < this.props.thresholdLower || d.value > this.props.thresholdUpper) ? 'red' : d.color;
+      return (d.value < this.props.thresholdLower || d.value > this.props.thresholdUpper) ? '#e1604f' : d.color;
     } else {
       return d.color;
     }
@@ -170,8 +170,8 @@ class SpiderChart extends Component {
       return (
         <path
           d={ arc() }
-          fill={ this.props.highlight ? this.props.highlightStrokeColor : "green" }
-          fillOpacity={ this.props.highlight ? .75 : .25 }>
+          fill={ this.props.highlight ? this.props.highlightStrokeColor : '#97be8c' }
+          fillOpacity=".75">
         </path>
       )
     }

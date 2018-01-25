@@ -4,6 +4,7 @@ import * as colorScale from 'd3-scale-chromatic';
 import _ from 'lodash';
 
 import * as CONSTANTS from './constants/chart-types';
+import './polyfill/polyfill';
 
 import VisControlGroup from './components/vis-control-group/vis-control-group';
 import SpiderChart from './components/spider-chart/spider-chart';
@@ -33,9 +34,8 @@ class App extends Component {
 
     this.state = {
       windowWidth: 0,
-      currentYear: 2018,
+      targetDate: new Date('2018-01-01T12:00:01Z'),
       activeYear: 2018,
-      currentMonth: 1,
       activeMonth: 1,
       patientData: [],
       dateData: [],
@@ -65,21 +65,21 @@ class App extends Component {
         id: patient._id,
         label: patient.patient,
         checked: false,
-        data: [ this.assembleRadarDataObjectFor(patient._id, this.state.currentYear, this.state.currentMonth) ]
+        data: [ this.assembleRadarDataObjectFor(patient._id, this.state.targetDate.getFullYear(), this.state.targetDate.getMonth() + 1) ]
       };
     });
     patientData[0].checked = true;
     this.setState({ patientData }, () => {
       // Date data
-      const now = new Date('2018:01');
-      const nextQuarter = new Date(now);
-      const lastQuarter = new Date(now);
-      const lastYear = new Date(now);
-      const twoYearsAgo = new Date(now);
-      nextQuarter.setMonth(now.getMonth() + 3);
-      lastQuarter.setMonth(now.getMonth() - 3);
-      lastYear.setYear(now.getFullYear() - 1);
-      twoYearsAgo.setYear(now.getFullYear() - 2);
+      const { targetDate } = this.state;
+      const nextQuarter = new Date(targetDate);
+      const lastQuarter = new Date(targetDate);
+      const lastYear = new Date(targetDate);
+      const twoYearsAgo = new Date(targetDate);
+      nextQuarter.setMonth(targetDate.getMonth() + 3);
+      lastQuarter.setMonth(targetDate.getMonth() - 3);
+      lastYear.setYear(targetDate.getFullYear() - 1);
+      twoYearsAgo.setYear(targetDate.getFullYear() - 2);
       const dates = [
         {
           date: twoYearsAgo,
@@ -94,7 +94,7 @@ class App extends Component {
           label: 'Last Quarter'
         },
         {
-          date: now,
+          date: targetDate,
           label: 'Today'
         },
         {

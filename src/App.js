@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import * as d3 from 'd3';
 import _ from 'lodash';
-import Select from 'react-select';
 
 import * as CONSTANTS from './constants/chart-types';
 
@@ -41,6 +40,7 @@ class App extends Component {
       patientData: [],
       dateData: [],
       radarData: [],
+      visTypes: visTypes,
       visType: visTypes[0]
     }
 
@@ -202,7 +202,7 @@ class App extends Component {
     return this.state.patientData.filter(patient => patient.checked);
   }
 
-  handleVisSelectChange = (visType) => {
+  handleVisSelectChange = (visType) => (e) => {
     this.setState({ visType });
   }
 
@@ -215,16 +215,22 @@ class App extends Component {
 
     return (
       <div className="App">
-        <div className="vis-select-container">
-          <Select
-            name="vis-select"
-            value={ visTypeValue }
-            onChange={ this.handleVisSelectChange }
-            options={ visTypes }
-            clearable={ false }
-            searchable={ false }
-          />
-        </div>
+        <fieldset className="vis-select label">
+          <legend>Select Visualization Type</legend>
+          {this.state.visTypes.map(visType => {
+            return (
+              <label key={visType.value}>
+                <input
+                  type="radio"
+                  name="vis-select"
+                  value={ visType.value }
+                  checked={ visType.value === visTypeValue }
+                  onChange={ this.handleVisSelectChange(visType) } />
+                { visType.label }
+              </label>
+            )
+          })}
+        </fieldset>
         <div className="vis-container">
           <div className="vis-container__main">
             <SpiderChart

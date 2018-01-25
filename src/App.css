@@ -88,7 +88,18 @@
   color: #888;
 }
 
-.vis-select-container {
-  width: 150px;
+.vis-select {
+  margin-top: 10px;
+  padding: 20px 10px;
+  border: 0;
+}
+
+.vis-select label {
   padding: 10px;
+  color: #000;
+}
+
+.vis-select label,
+.vis-select input {
+  cursor: pointer;
 }

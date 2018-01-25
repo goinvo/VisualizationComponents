@@ -423,7 +423,7 @@ class SpiderChart extends Component {
                             <text
                               x="0"
                               y="0"
-                              dy={ parseInt(parseInt(this.props.scoreSize) / 2.5) + "px" }
+                              dy={ parseInt(parseInt(this.props.scoreSize, 10) / 2.5, 10) + "px" }
                               textAnchor="middle"
                               fontSize={ this.props.scoreSize }
                               fontWeight="bold"

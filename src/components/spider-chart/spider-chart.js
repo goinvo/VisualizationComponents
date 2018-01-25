@@ -59,15 +59,15 @@ class SpiderChart extends Component {
   }
 
   initConfig = (props) => {
-    this.maxValue = Math.max(props.maxValue, d3.max(props.data, item => {
-      return d3.max(item.values, value => value.value);
-    }));
-
-    // NOTE: data[0] means currently this code assumes all entries have the same axis data
     if (props.data.length) {
+      // NOTE: data[0] means currently this code assumes all entries have the same axis data
       this.allAxis = props.data[0].values.map(val => val.label);  // Names of each axis
+      this.maxValue = Math.max(props.maxValue, d3.max(props.data, item => {
+        return d3.max(item.values, value => value.value);
+      }));
     } else {
-      this.allAxis = [];
+      this.allAxis = this.allAxis ? this.allAxis : []; // A.k.a. If it has been set before, then leave it. If not, use empty array as placeholder.
+      this.maxValue = props.maxValue;
     }
 
     this.radius = Math.min((props.width / 2), (props.height / 2));  // Radius of the outermost circle

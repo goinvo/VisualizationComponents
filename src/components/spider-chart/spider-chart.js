@@ -427,6 +427,7 @@ class SpiderChart extends Component {
                               textAnchor="middle"
                               fontSize={ this.props.scoreSize }
                               fontWeight="bold"
+                              pointerEvents="none"
                               fill={ this.props.scoreColor || d.color }>
                                 { d.score }
                             </text>

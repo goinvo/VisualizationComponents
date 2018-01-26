@@ -214,7 +214,23 @@ class App extends Component {
     const visTypeValue = visType && visType.value;
 
     return (
-      <div className="App">
+      <div className="app app--fixed-header">
+        <header className="header header--fixed">
+          <h1 className="header__title">
+            Visualization Components
+            <span className="header__sub-title">v0.01</span>
+          </h1>
+          <nav className="nav">
+            <ul className="nav-list">
+              <li className="nav-list__item">
+                <a href="mailto:hello@goinvo.com">Feedback</a>
+              </li>
+              <li className="nav-list__item">
+                <a href="https://github.com/goinvo/VisualizationComponents">GitHub</a>
+              </li>
+            </ul>
+          </nav>
+        </header>
         <fieldset className="vis-select label">
           <legend>Select Visualization Type</legend>
           {this.state.visTypes.map(visType => {

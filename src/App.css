@@ -1,3 +1,70 @@
+.app--fixed-header {
+  margin-top: 75px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+}
+
+.header.header--fixed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 60px;
+  background-color: #000;
+}
+
+.header.header--fixed .nav {
+  height: 100%;
+}
+
+.header__title {
+  margin: 0;
+  color: #fff;
+  font-size: 24px;
+  margin-left: 20px;
+}
+
+.header__sub-title {
+  margin-left: 5px;
+  font-size: 12px;
+}
+
+.header .nav {
+  margin-left: auto;
+}
+
+.nav-list {
+  display: flex;
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.header.header--fixed .nav-list {
+  height: 100%;
+  align-items: center;
+  justify-content: flex-end;
+  margin-right: 20px;
+}
+
+.nav-list__item:not(:first-of-type) {
+  margin-left: 10px;
+}
+
+.nav-list__item a {
+  padding: 10px;
+  color: #fff;
+  text-decoration: none;
+}
+
+.nav-list__item a:hover {
+  color: #ebebeb;
+  text-decoration: underline;
+}
+
 .vis-container {
   display: flex;
   align-items: center;

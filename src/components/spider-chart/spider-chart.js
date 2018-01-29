@@ -2,10 +2,10 @@ import React, { Component } from 'react';
 import * as d3 from 'd3';
 import _ from 'lodash';
 import Text from 'react-svg-text';
-import NodeGroup from 'react-move/NodeGroup';
-import Animate from 'react-move/Animate';
 
 import * as CONSTANTS from '../../constants/chart-types';
+
+import Polygon from '../polygon/polygon';
 
 class SpiderChart extends Component {
 
@@ -14,26 +14,20 @@ class SpiderChart extends Component {
     width: 500,
     height: 500,
     margin: { top: 50, right: 50, bottom: 50, left: 50 },
+    maxValue: 1,
     axes: true,
     axisLabel: true,
+    labelOffset: 1.1,
+    wrapWidth: 60,
     levels: 4,
     levelLabel: true,
-    maxValue: 1,
-    labelOffset: 1.1,
-    activeDotOffset: 0.025,
-    wrapWidth: 60,
-    opacityArea: 0.25,
-    dotRadius: 4,
     levelsOpacity: 0.1,
     strokeWidth: 1,
     strokeColor: '#eaeaea',
     highlightStrokeColor: '#8F85FF',
-    canFocus: true,
-    showScore: false,
-    scoreSize: "80px",
-    color: d3.scaleOrdinal(d3.schemeCategory10),
     thresholdLower: 0.25,
-    thresholdUpper: 0.75
+    thresholdUpper: 0.75,
+    activePointOffset: 0.025
   }
 
   constructor(props) {
@@ -80,8 +74,7 @@ class SpiderChart extends Component {
       .domain([0, this.maxValue]);
   }
 
-  handlePolygonClick = (data) => (e) => {
-    e.stopPropagation();
+  handlePolygonClick = (data) => () => {
     if (data.id === this.state.activeNodeId) {
       this.setState({ activeNodeId: '' });
     } else {
@@ -96,26 +89,19 @@ class SpiderChart extends Component {
         value: val.value,
         cx: this.scaleRadial(val.value) * Math.cos(this.angleSlice * i - Math.PI / 2),
         cy: this.scaleRadial(val.value) * Math.sin(this.angleSlice * i - Math.PI / 2),
-        activeX: this.scaleRadial(parseFloat(val.value) + this.props.activeDotOffset) * Math.cos(this.angleSlice * i - Math.PI / 2),
-        activeY: this.scaleRadial(parseFloat(val.value) + this.props.activeDotOffset) * Math.sin(this.angleSlice * i - Math.PI / 2),
-        color: data.color
+        activeCx: this.scaleRadial(parseFloat(val.value) + this.props.activePointOffset) * Math.cos(this.angleSlice * i - Math.PI / 2),
+        activeCy: this.scaleRadial(parseFloat(val.value) + this.props.activePointOffset) * Math.sin(this.angleSlice * i - Math.PI / 2),
+        color: this.thresholdColor(val.value, data.color),
+        activeText: this.Format(val.value).slice(0, -1)
       };
     });
   }
 
-  assemblePointsDataStr = (data) => {
-    let str = "";
-    data.values.forEach((val, i) => {
-      str += `${this.scaleRadial(val.value) * Math.cos(this.angleSlice * i - Math.PI / 2)},${this.scaleRadial(val.value) * Math.sin(this.angleSlice * i - Math.PI / 2)} `;
-    });
-    return str;
-  }
-
-  thresholdColor = (d) => {
+  thresholdColor = (value, color) => {
     if (this.props.type === CONSTANTS.hgraph) {
-      return (d.value < this.props.thresholdLower || d.value > this.props.thresholdUpper) ? '#e1604f' : d.color;
+      return (value < this.props.thresholdLower || value > this.props.thresholdUpper) ? '#e1604f' : color;
     } else {
-      return d.color;
+      return color;
     }
   }
 
@@ -246,166 +232,6 @@ class SpiderChart extends Component {
     )
   }
 
-  renderPolygon = (data) => {
-    return (
-      <Animate
-        start={{
-          pointsStr: this.assemblePointsDataStr(data),
-          fillOpacity: data.id === this.state.activeNodeId ? .7 : this.props.opacityArea
-        }}
-        enter={{
-          pointsStr: this.assemblePointsDataStr(data),
-          fillOpacity: data.id === this.state.activeNodeId ? .7 : this.props.opacityArea
-        }}
-        update={[
-          {
-            pointsStr: [this.assemblePointsDataStr(data)],
-            timing: { duration: 750, ease: d3.easeExp }
-          },
-          {
-            fillOpacity: [data.id === this.state.activeNodeId ? .7 : this.props.opacityArea],
-            timing: { duration: 250, ease: d3.easeExp }
-          }
-        ]}
-      >
-        {(state) => {
-          return (
-            <polygon
-              className="polygon"
-              points={ state.pointsStr }
-              stroke={ data.color }
-              strokeWidth={ this.props.type === CONSTANTS.hgraph ? 0 : this.props.strokeWidth }
-              fill={ data.color }
-              fillOpacity={ state.fillOpacity }
-              onClick={ this.handlePolygonClick(data) }>
-            </polygon>
-          );
-        }}
-      </Animate>
-    )
-  }
-
-  renderPoints = (data) => {
-    return (
-      <g className="polygon__points-wrapper">
-        <NodeGroup
-          data={ this.assemblePointsData(data) }
-          keyAccessor={ (d) => d.key }
-          start={(d, index) => ({
-            cx: d.cx,
-            cy: d.cy,
-            activeCx: d.activeX,
-            activeCy: d.activeY,
-            dotRadius: this.props.dotRadius,
-            color: this.thresholdColor(d),
-            activeOpacity: this.state.activeNodeId === data.id ? 1 : 0
-          })}
-          enter={(d, index) => ({
-            cx: d.cx,
-            cy: d.cy,
-            activeCx: d.activeX,
-            activeCy: d.activeY,
-            dotRadius: this.props.dotRadius,
-            color: this.thresholdColor(d),
-            activeOpacity: this.state.activeNodeId === data.id ? 1 : 0
-          })}
-          update={(d, index) => ([
-            {
-              cx: [d.cx],
-              cy: [d.cy],
-              activeCx: [d.activeX],
-              activeCy: [d.activeY],
-              dotRadius: [this.props.dotRadius],
-              color: [this.thresholdColor(d)],
-              timing: { duration: 750, ease: d3.easeExp }
-            },
-            {
-              activeOpacity: [this.state.activeNodeId === data.id ? 1 : 0],
-              timing: { duration: 250, ease: d3.easeExp }
-            }
-          ])}
-        >
-          {(nodes) => {
-            return (
-              <g>
-                {nodes.map(({ key, data, state }) => {
-                  return (
-                    <g key={ data.key }>
-                      <circle
-                        className="polygon__point"
-                        r={ state.dotRadius }
-                        cx={ state.cx }
-                        cy={ state.cy }
-                        fill={ state.color }>
-                      </circle>
-                      <g opacity={ state.activeOpacity } className="polygon__active-point-wrapper">
-                        <circle
-                          r="20"
-                          cx={ state.activeCx }
-                          cy={ state.activeCy }
-                          fill={ state.color }>
-                        </circle>
-                        <text
-                          x={ state.activeCx }
-                          y={ state.activeCy }
-                          fontSize="20px"
-                          fill="#fff">
-                          <tspan
-                            alignmentBaseline="middle"
-                            textAnchor="middle">
-                            { this.Format(data.value).slice(0, -1) }
-                          </tspan>
-                          <tspan
-                            alignmentBaseline="middle"
-                            textAnchor="middle"
-                            fontSize="10px">
-                            %
-                          </tspan>
-                        </text>
-                      </g>
-                    </g>
-                  )
-                })}
-              </g>
-            );
-          }}
-        </NodeGroup>
-      </g>
-    );
-  }
-
-  renderScore = (data) => {
-    const transitionObj = {
-      opacity: [this.state.data.length === 1 || data.id === this.state.activeNodeId ? 1 : 0],
-      timing: { duration: 250, ease: d3.easeExp }
-    };
-    return (
-      <Animate
-        start={transitionObj}
-        enter={transitionObj}
-        update={transitionObj}
-        leave={transitionObj}
-      >
-        {(state) => {
-          return (
-            <text
-              opacity={ state.opacity }
-              x="0"
-              y="0"
-              dy={ parseInt(parseInt(this.props.scoreSize, 10) / 2.5, 10) + "px" }
-              textAnchor="middle"
-              fontSize={ this.props.scoreSize }
-              fontWeight="bold"
-              pointerEvents="none"
-              fill={ this.props.scoreColor || data.color }>
-                { data.score }
-            </text>
-          )
-        }}
-      </Animate>
-    )
-  }
-
   render() {
     const sortedData = this.state.data.sort((a, b) => {
       return (a.id === this.state.activeNodeId)-(b.id === this.state.activeNodeId);
@@ -426,15 +252,21 @@ class SpiderChart extends Component {
                 {
                   sortedData.map(d => {
                     return (
-                      <g className="polygon-wrapper" key={ d.id }>
-                        { this.renderPolygon(d) }
-                        { this.renderPoints(d) }
-                        {
-                          this.props.showScore ?
-                            this.renderScore(d)
-                          : null
-                        }
-                      </g>
+                      <Polygon
+                        key={ d.id }
+                        color={ d.color }
+                        points={ this.assemblePointsData(d) }
+                        areaOpacity={ this.props.areaOpacity }
+                        strokeWidth={ this.props.type === CONSTANTS.hgraph ? 0 : this.props.strokeWidth }
+                        pointRadius={ this.props.pointRadius }
+                        scoreEnabled={ true }
+                        score={ d.score }
+                        showScore={ this.props.scoreEnabled && (sortedData.length === 1 || d.id === this.state.activeNodeId) }
+                        scoreSize={ this.props.scoreSize }
+                        scoreColor={ this.props.scoreColor }
+                        isActive={ d.id === this.state.activeNodeId }
+                        onClick={ this.handlePolygonClick(d) }
+                        />
                     )
                   })
                 }

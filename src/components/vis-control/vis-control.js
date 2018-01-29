@@ -47,10 +47,11 @@ class VisControl extends Component {
             levelLabel={ false }
             axes={ false }
             axisLabel={ false }
-            dotRadius={ 2 }
+            pointRadius={ 2 }
             canFocus={ false }
             highlight={ this.state.isChecked }
-            showScore={ this.props.showScore }
+            scoreEnabled={ this.props.scoreEnabled }
+            showScore={ true }
             scoreSize={ this.props.scoreSize }
             scoreColor={ this.props.scoreColor }
           />

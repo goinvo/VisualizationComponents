@@ -257,9 +257,8 @@ class App extends Component {
               axes={ this.state.visType.value === 'hgraph' ? false : true }
               labelOffset={ size < 300 ? 1.2 : 1.1 }
               levelLabel={ this.state.visType.value === 'hgraph' ? false : true }
-              dotRadius={ this.state.visType.value === CONSTANTS.hgraph ? 10 : 4 }
-              showScore={ this.state.visType.value === CONSTANTS.hgraph }
-              scoreColor="#000" />
+              pointRadius={ this.state.visType.value === CONSTANTS.hgraph ? 10 : 4 }
+              scoreEnabled={ this.state.visType.value === CONSTANTS.hgraph } />
             <div className="vis-container__controls-container">
               <div className={ `vis-container__date-controls ${sizeBasedOnWindow < breakpoint ? 'vis-container__date-controls--mobile ' : ''}` }>
                 <p className="label">Time period</p>
@@ -279,9 +278,8 @@ class App extends Component {
                     <VisControlGroup
                       type="checkbox"
                       visType={ this.state.visType.value }
-                      showScore={ true }
+                      scoreEnabled={ true }
                       scoreSize="16px"
-                      scoreColor="#000"
                       stacked={ true }
                       blockLabel={ true }
                       controls={ this.state.patientData }
@@ -298,9 +296,8 @@ class App extends Component {
                 <VisControlGroup
                   type="checkbox"
                   visType={ this.state.visType.value }
-                  showScore={ true }
+                  scoreEnabled={ true }
                   scoreSize="16px"
-                  scoreColor="#000"
                   stacked={ true }
                   controls={ this.state.patientData }
                   onChange={ this.handlePatientControlListChange } />

@@ -3,6 +3,7 @@ import * as d3 from 'd3';
 import _ from 'lodash';
 import Text from 'react-svg-text';
 import NodeGroup from 'react-move/NodeGroup';
+import Animate from 'react-move/Animate';
 
 import * as CONSTANTS from '../../constants/chart-types';
 
@@ -155,7 +156,6 @@ class SpiderChart extends Component {
               fill={ this.props.highlight ? this.props.highlightStrokeColor : this.props.strokeColor }
               fillOpacity={ this.props.levelsOpacity }
               stroke={ this.props.highlight ? this.props.highlightStrokeColor : this.props.strokeColor }>
-              { /* filter="url(#glow)"> */ }
             </circle>
           )
         })
@@ -248,18 +248,16 @@ class SpiderChart extends Component {
 
   renderPolygon = (data) => {
     return (
-      <NodeGroup
-        data={ [data] }
-        keyAccessor={ (d) => d.id }
-        start={(data, index) => ({
+      <Animate
+        start={{
           pointsStr: this.assemblePointsDataStr(data),
           fillOpacity: data.id === this.state.activeNodeId ? .7 : this.props.opacityArea
-        })}
-        enter={(data, index) => ({
+        }}
+        enter={{
           pointsStr: this.assemblePointsDataStr(data),
           fillOpacity: data.id === this.state.activeNodeId ? .7 : this.props.opacityArea
-        })}
-        update={(data, index) => ([
+        }}
+        update={[
           {
             pointsStr: [this.assemblePointsDataStr(data)],
             timing: { duration: 750, ease: d3.easeExp }
@@ -268,32 +266,22 @@ class SpiderChart extends Component {
             fillOpacity: [data.id === this.state.activeNodeId ? .7 : this.props.opacityArea],
             timing: { duration: 250, ease: d3.easeExp }
           }
-        ])}
+        ]}
       >
-        {(nodes) => {
+        {(state) => {
           return (
-            <g>
-              {nodes.map(({ key, data, state }) => {
-                return (
-                  <g key={ key }>
-                    <polygon
-                      className="polygon"
-                      points={ state.pointsStr }
-                      stroke={ data.color }
-                      strokeWidth={ this.props.type === CONSTANTS.hgraph ? 0 : this.props.strokeWidth }
-                      // strokeWidth={0}
-                      fill={ data.color }
-                      fillOpacity={ state.fillOpacity }
-                      // filter="url(#glow)"
-                      onClick={ this.handlePolygonClick(data) }>
-                    </polygon>
-                  </g>
-                )
-              })}
-            </g>
+            <polygon
+              className="polygon"
+              points={ state.pointsStr }
+              stroke={ data.color }
+              strokeWidth={ this.props.type === CONSTANTS.hgraph ? 0 : this.props.strokeWidth }
+              fill={ data.color }
+              fillOpacity={ state.fillOpacity }
+              onClick={ this.handlePolygonClick(data) }>
+            </polygon>
           );
         }}
-      </NodeGroup>
+      </Animate>
     )
   }
 
@@ -386,6 +374,38 @@ class SpiderChart extends Component {
     );
   }
 
+  renderScore = (data) => {
+    const transitionObj = {
+      opacity: [this.state.data.length === 1 || data.id === this.state.activeNodeId ? 1 : 0],
+      timing: { duration: 250, ease: d3.easeExp }
+    };
+    return (
+      <Animate
+        start={transitionObj}
+        enter={transitionObj}
+        update={transitionObj}
+        leave={transitionObj}
+      >
+        {(state) => {
+          return (
+            <text
+              opacity={ state.opacity }
+              x="0"
+              y="0"
+              dy={ parseInt(parseInt(this.props.scoreSize, 10) / 2.5, 10) + "px" }
+              textAnchor="middle"
+              fontSize={ this.props.scoreSize }
+              fontWeight="bold"
+              pointerEvents="none"
+              fill={ this.props.scoreColor || data.color }>
+                { data.score }
+            </text>
+          )
+        }}
+      </Animate>
+    )
+  }
+
   render() {
     const sortedData = this.state.data.sort((a, b) => {
       return (a.id === this.state.activeNodeId)-(b.id === this.state.activeNodeId);
@@ -397,15 +417,6 @@ class SpiderChart extends Component {
             width={ this.props.width + this.props.margin.left + this.props.margin.right }
             height={ this.props.height + this.props.margin.top + this.props.margin.bottom }
             onClick={ this.handlePolygonClick({ id: '' }) }>
-            <defs>
-              <filter id="glow">
-                <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-                <feMerge>
-                  <feMergeNode in="coloredBlur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
             <g
               transform={ "translate(" + ((this.props.width / 2) + this.props.margin.left) + "," + ((this.props.height / 2) + this.props.margin.top) + ")" }>
               <g className="axis-container">
@@ -419,18 +430,8 @@ class SpiderChart extends Component {
                         { this.renderPolygon(d) }
                         { this.renderPoints(d) }
                         {
-                          this.props.showScore && (this.state.data.length === 1 || d.id === this.state.activeNodeId) ?
-                            <text
-                              x="0"
-                              y="0"
-                              dy={ parseInt(parseInt(this.props.scoreSize, 10) / 2.5, 10) + "px" }
-                              textAnchor="middle"
-                              fontSize={ this.props.scoreSize }
-                              fontWeight="bold"
-                              pointerEvents="none"
-                              fill={ this.props.scoreColor || d.color }>
-                                { d.score }
-                            </text>
+                          this.props.showScore ?
+                            this.renderScore(d)
                           : null
                         }
                       </g>

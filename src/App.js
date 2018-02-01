@@ -8,6 +8,7 @@ import './polyfill/polyfill';
 
 import VisControlGroup from './components/vis-control-group/vis-control-group';
 import SpiderChart from './components/spider-chart/spider-chart';
+import HGraph from './components/hgraph/hgraph';
 
 import data from './data/data.json';
 
@@ -249,16 +250,29 @@ class App extends Component {
         </fieldset>
         <div className="vis-container">
           <div className="vis-container__main">
-            <SpiderChart
-              data={ this.state.radarData }
-              width={ size }
-              height={ size }
-              type={ this.state.visType.value }
-              axes={ this.state.visType.value === 'hgraph' ? false : true }
-              labelOffset={ size < 300 ? 1.2 : 1.1 }
-              levelLabel={ this.state.visType.value === 'hgraph' ? false : true }
-              pointRadius={ this.state.visType.value === CONSTANTS.hgraph ? 10 : 4 }
-              scoreEnabled={ this.state.visType.value === CONSTANTS.hgraph } />
+            {
+              this.state.visType.value === CONSTANTS.hgraph ?
+                <HGraph
+                  data={ this.state.radarData }
+                  width={ size }
+                  height={ size }
+                  type={ CONSTANTS.hgraph }
+                  axes={ false }
+                  labelOffset={ size < 300 ? 1.2 : 1.1 }
+                  levelLabel={ false }
+                  pointRadius={ 10 }
+                  scoreEnabled={ true } />
+              :
+                <SpiderChart
+                  data={ this.state.radarData }
+                  width={ size }
+                  height={ size }
+                  type={ this.state.visType.value }
+                  axes={ true }
+                  labelOffset={ size < 300 ? 1.2 : 1.1 }
+                  levelLabel={ true }
+                  pointRadius={ 4 } />
+            }
             <div className="vis-container__controls-container">
               <div className={ `vis-container__date-controls ${sizeBasedOnWindow < breakpoint ? 'vis-container__date-controls--mobile ' : ''}` }>
                 <p className="label">Time period</p>

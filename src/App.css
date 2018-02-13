@@ -170,3 +170,37 @@
 .vis-select input {
   cursor: pointer;
 }
+
+/* DOH vis styles */
+
+.doh__arc path {
+  stroke: #fff;
+}
+
+.doh__tree-wrapper {
+  transform-origin: center;
+}
+
+.doh__tree {
+  transform-origin: 0px 57px;
+}
+
+.doh__link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 2px;
+}
+
+.doh__node circle {
+  fill: #fff;
+  stroke: steelblue;
+  stroke-width: 3px;
+}
+
+.doh__node text {
+  font: 12px sans-serif;
+}
+
+.doh__node--internal text {
+  text-shadow: 0 1px 0 #fff, 0 -1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff;
+}

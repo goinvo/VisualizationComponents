@@ -9,8 +9,10 @@ import './polyfill/polyfill';
 import VisControlGroup from './components/vis-control-group/vis-control-group';
 import SpiderChart from './components/spider-chart/spider-chart';
 import HGraph from './components/hgraph/hgraph';
+import DOH from './components/doh/doh';
 
 import data from './data/data.json';
+import dohData from './data/doh.json';
 
 import './App.css';
 
@@ -232,7 +234,10 @@ class App extends Component {
             </ul>
           </nav>
         </header>
-        <fieldset className="vis-select label">
+        <div className="vis-container">
+          <DOH data={ dohData } />
+        </div>
+        {/* <fieldset className="vis-select label">
           <legend>Select Visualization Type</legend>
           {this.state.visTypes.map(visType => {
             return (
@@ -318,7 +323,7 @@ class App extends Component {
               </div>
             : null
           }
-        </div>
+          </div> */}
       </div>
     );
   }

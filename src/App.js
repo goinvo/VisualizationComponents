@@ -42,7 +42,107 @@ class App extends Component {
       dateData: [],
       radarData: [],
       visTypes: visTypes,
-      visType: visTypes[2]
+      visType: visTypes[2],
+      testData: [
+        {
+          id: "test",
+          legendLabel: "test",
+          color: "gray",
+          values: [
+            {
+              label: "absoluteMin",
+              value: .01,
+              healthyMin: .3,
+              healthyMax: .6,
+              absoluteMin: .01,
+              absoluteMax: 1,
+              units: "mg/dl"
+            },
+            {
+              label: "lowRangeExactMid",
+              value: .5,
+              healthyMin: 1,
+              healthyMax: 2,
+              absoluteMin: 0,
+              absoluteMax: 3,
+              units: "mg/dl"
+            },
+            {
+              label: "lowRangeHigher",
+              value: 1.8,
+              healthyMin: 2,
+              healthyMax: 4,
+              absoluteMin: 1,
+              absoluteMax: 4.2,
+              units: "mg/dl"
+            },
+            {
+              label: "healthyMin",
+              value: -10,
+              healthyMin: -10,
+              healthyMax: 10,
+              absoluteMin: -45,
+              absoluteMax: 23,
+              units: "mg/dl"
+            },
+            {
+              label: "healthyExactMid",
+              value: .5,
+              healthyMin: 0,
+              healthyMax: 1,
+              absoluteMin: -1,
+              absoluteMax: 2,
+              units: "something"
+            },
+            {
+              label: "healthyRangeHigher",
+              value: 250,
+              healthyMin: 0,
+              healthyMax: 300,
+              absoluteMin: 0,
+              absoluteMax: 300,
+              units: "burps/hr"
+            },
+            {
+              label: "healthyMax",
+              value: 1234,
+              healthyMin: 1231,
+              healthyMax: 1234,
+              absoluteMin: 1220,
+              absoluteMax: 1237,
+              units: "mg/dl"
+            },
+            {
+              label: "highRangeExactMid",
+              value: 10000,
+              healthyMin: 5000,
+              healthyMax: 8000,
+              absoluteMin: 1000,
+              absoluteMax: 12000,
+              units: "hUnit"
+            },
+            {
+              label: "highRangeHigher",
+              value: 1.7,
+              healthyMin: .5,
+              healthyMax: 1,
+              absoluteMin: 0,
+              absoluteMax: 2,
+              units: "hUnit"
+            },
+            {
+              label: "absoluteMax",
+              value: 2,
+              healthyMin: .5,
+              healthyMax: 1,
+              absoluteMin: 0,
+              absoluteMax: 2,
+              units: "hUnit"
+            }
+          ],
+          score: 50
+        }
+      ]
     }
 
     this.color = d3.scaleOrdinal(colorScale.schemeDark2);
@@ -253,15 +353,10 @@ class App extends Component {
             {
               this.state.visType.value === CONSTANTS.hgraph ?
                 <HGraph
-                  data={ this.state.radarData }
+                  data={ this.state.testData }
                   width={ size }
                   height={ size }
-                  type={ CONSTANTS.hgraph }
-                  axes={ false }
-                  labelOffset={ size < 300 ? 1.2 : 1.1 }
-                  levelLabel={ false }
-                  pointRadius={ 10 }
-                  scoreEnabled={ true } />
+                  labelOffset={ size < 300 ? 1.2 : 1.1 } />
               :
                 <SpiderChart
                   data={ this.state.radarData }

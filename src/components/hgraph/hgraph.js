@@ -1,33 +1,68 @@
 import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 import * as d3 from 'd3';
-import _ from 'lodash';
 import Text from 'react-svg-text';
-
-import * as CONSTANTS from '../../constants/chart-types';
 
 import Polygon from '../polygon/polygon';
 
-class SpiderChart extends Component {
+class HGraph extends Component {
+  static propTypes = {
+    data: PropTypes.arrayOf(PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      color: PropTypes.string.isRequired,
+      values: PropTypes.arrayOf(PropTypes.shape({
+        label: PropTypes.string.isRequired,
+        value: PropTypes.number.isRequired,
+        healthyMin: PropTypes.number.isRequired,
+        healthyMax: PropTypes.number.isRequired,
+        absoluteMin: PropTypes.number.isRequired,
+        absoluteMax: PropTypes.number.isRequired,
+        units: PropTypes.string.isRequired
+      })),
+      score: PropTypes.number.isRequired
+    })),
+    width: PropTypes.number,
+    height: PropTypes.number,
+    margin: PropTypes.shape({
+      top: PropTypes.number,
+      right: PropTypes.number,
+      bottom: PropTypes.number,
+      left: PropTypes.number
+    }),
+    abosluteMin: PropTypes.number,
+    absoluteMax: PropTypes.number,
+    thresholdMin: PropTypes.number,
+    thresholdMax: PropTypes.number,
+    axisLabel: PropTypes.bool,
+    axisLabelOffset: PropTypes.number,
+    axisLabelWrapWidth: PropTypes.number,
+    highlight: PropTypes.bool,
+    highlightStrokeColor: PropTypes.string,
+    areaOpacity: PropTypes.number,
+    pointRadius: PropTypes.number,
+    // TODO: Return to activePoint stuffs
+    activePointOffset: PropTypes.number,
+    scoreEnabled: PropTypes.bool,
+  }
 
   static defaultProps = {
-    type: CONSTANTS.spider,
     width: 500,
     height: 500,
     margin: { top: 50, right: 50, bottom: 50, left: 50 },
-    maxValue: 1,
-    axes: true,
+    absoluteMin: 0,
+    absoluteMax: 1,
+    thresholdMin: .25,
+    thresholdMax: .75,
     axisLabel: true,
-    labelOffset: 1.1,
-    wrapWidth: 60,
-    levels: 4,
-    levelLabel: true,
-    levelsOpacity: 0.1,
-    strokeWidth: 1,
-    strokeColor: '#eaeaea',
+    axisLabelOffset: 1.1,
+    axisLabelWrapWidth: 60,
+    highlight: false,
     highlightStrokeColor: '#8F85FF',
-    thresholdLower: 0.25,
-    thresholdUpper: 0.75,
-    activePointOffset: 0.025
+    areaOpacity: 0.5,
+    pointRadius: 10,
+    // TODO: Return to activePoint stuffs
+    activePointOffset: 0.025,
+    scoreEnabled: true,
   }
 
   constructor(props) {
@@ -57,21 +92,40 @@ class SpiderChart extends Component {
     if (props.data.length) {
       // NOTE: data[0] means currently this code assumes all entries have the same axis data
       this.allAxis = props.data[0].values.map(val => val.label);  // Names of each axis
-      this.maxValue = Math.max(props.maxValue, d3.max(props.data, item => {
-        return d3.max(item.values, value => value.value);
-      }));
     } else {
       this.allAxis = this.allAxis ? this.allAxis : []; // A.k.a. If it has been set before, then leave it. If not, use empty array as placeholder.
-      this.maxValue = props.maxValue;
     }
 
+    this.absoluteMin = props.absoluteMin;
+    this.absoluteMax = props.absoluteMax;
+
     this.radius = Math.min((props.width / 2), (props.height / 2));  // Radius of the outermost circle
-    this.rangeBottom = props.type === CONSTANTS.hgraph ? this.radius / 2.5 : 0;
+    this.rangeBottom = this.radius / 2.5;
     this.angleSlice = (Math.PI * 2) / this.allAxis.length;  // The width in radians of each "slice"
 
     this.scaleRadial = d3.scaleLinear()
-      .range([this.rangeBottom, this.radius])
-      .domain([0, this.maxValue]);
+      .domain([this.absoluteMin, this.absoluteMax])
+      .range([this.rangeBottom, this.radius]);
+  }
+
+  convertValueToHgraphPercentage = (valueObject) => {
+    const { value, healthyMin, healthyMax, absoluteMin, absoluteMax } = valueObject;
+    let scale;
+
+    if (value < healthyMin) {
+      scale = d3.scaleLinear()
+        .domain([absoluteMin, healthyMin])
+        .range([this.props.absoluteMin, this.props.thresholdMin]);
+    } else if (value > healthyMax) {
+      scale = d3.scaleLinear()
+        .domain([healthyMax, absoluteMax])
+        .range([this.props.thresholdMax, this.props.absoluteMax]);
+    } else {
+      scale = d3.scaleLinear()
+        .domain([healthyMin, healthyMax])
+        .range([this.props.thresholdMin, this.props.thresholdMax]);
+    }
+    return scale(value);
   }
 
   handlePolygonClick = (data) => () => {
@@ -84,133 +138,67 @@ class SpiderChart extends Component {
 
   assemblePointsData = (data) => {
     return data.values.map((val, i) => {
+      const percentageFromValue = this.convertValueToHgraphPercentage(val);
       return {
         key: val.label.replace(/\s/g,''),
         value: val.value,
-        cx: this.scaleRadial(val.value) * Math.cos(this.angleSlice * i - Math.PI / 2),
-        cy: this.scaleRadial(val.value) * Math.sin(this.angleSlice * i - Math.PI / 2),
-        activeCx: this.scaleRadial(parseFloat(val.value) + this.props.activePointOffset) * Math.cos(this.angleSlice * i - Math.PI / 2),
-        activeCy: this.scaleRadial(parseFloat(val.value) + this.props.activePointOffset) * Math.sin(this.angleSlice * i - Math.PI / 2),
-        color: this.thresholdColor(val.value, data.color),
-        activeText: this.Format(val.value).slice(0, -1)
+        cx: this.scaleRadial(percentageFromValue) * Math.cos(this.angleSlice * i - Math.PI / 2),
+        cy: this.scaleRadial(percentageFromValue) * Math.sin(this.angleSlice * i - Math.PI / 2),
+        activeCx: this.scaleRadial(parseFloat(percentageFromValue) + this.props.activePointOffset) * Math.cos(this.angleSlice * i - Math.PI / 2),
+        activeCy: this.scaleRadial(parseFloat(percentageFromValue) + this.props.activePointOffset) * Math.sin(this.angleSlice * i - Math.PI / 2),
+        color: this.thresholdColor(percentageFromValue, data.color),
+        activeText: this.Format(percentageFromValue).slice(0, -1)
       };
     });
   }
 
   thresholdColor = (value, color) => {
-    if (this.props.type === CONSTANTS.hgraph) {
-      return (value < this.props.thresholdLower || value > this.props.thresholdUpper) ? '#e1604f' : color;
-    } else {
-      return color;
-    }
+    return (value < this.props.thresholdMin || value > this.props.thresholdMax) ? '#e1604f' : color;
   }
 
-  renderLevels = () => {
-    if (this.props.type === CONSTANTS.spider) {
-      return (
-        <g
-          transform={ `translate(${ -(this.props.width / 2) }, ${ -(this.props.height / 2) })` }>
-          {_.times(this.props.levels, (level) => {
-            const levelFactor = this.radius * ((level + 1) / this.props.levels);
-            return (
-              this.allAxis.map((axis, i) => {
-                return (
-                  <line
-                    key={ axis }
-                    x1={ levelFactor * (1 - Math.sin(i * this.angleSlice)) }
-                    y1={ levelFactor * (1 - Math.cos(i * this.angleSlice)) }
-                    x2={ levelFactor * (1 - Math.sin((i + 1) * this.angleSlice)) }
-                    y2={ levelFactor * (1 - Math.cos((i + 1) * this.angleSlice)) }
-                    transform={ `translate(${ this.props.width / 2 - levelFactor }, ${ this.props.height / 2 - levelFactor })` }
-                    stroke={ this.props.highlight ? this.props.highlightStrokeColor : this.props.strokeColor }
-                    strokeWidth={ this.props.highlight ? "2px" : "1px" }>
-                  </line>
-                )
-              })
-            )
-          })}
-        </g>
-      )
-    } else if (this.props.type === CONSTANTS.radar) {
-      const levels = d3.range(1, (this.props.levels + 1)).reverse();
-      return (
-        levels.map((level, i) => {
-          return (
-            <circle
-              key={ level }
-              r={ this.radius / this.props.levels * level }
-              fill={ this.props.highlight ? this.props.highlightStrokeColor : this.props.strokeColor }
-              fillOpacity={ this.props.levelsOpacity }
-              stroke={ this.props.highlight ? this.props.highlightStrokeColor : this.props.strokeColor }>
-            </circle>
-          )
-        })
-      )
-    } else if (this.props.type === CONSTANTS.hgraph) {
-      const tau = 2 * Math.PI;
-      const arc = d3.arc()
-        .outerRadius(this.scaleRadial(this.props.thresholdUpper))
-        .innerRadius(this.scaleRadial(this.props.thresholdLower))
-        .startAngle(0)
-        .endAngle(tau);
-      return (
+  renderThreshold = () => {
+    const tau = 2 * Math.PI;
+    const healthyArc = d3.arc()
+      .outerRadius(this.scaleRadial(this.props.thresholdMax))
+      .innerRadius(this.scaleRadial(this.props.thresholdMin))
+      .startAngle(0)
+      .endAngle(tau);
+    const totalArc = d3.arc()
+      .outerRadius(this.scaleRadial(0))
+      .innerRadius(this.scaleRadial(1))
+      .startAngle(0)
+      .endAngle(tau);
+    return (
+      <g>
         <path
-          d={ arc() }
+          d={ totalArc() }
+          fill={'#000' }
+          fillOpacity=".05">
+        </path>
+        <path
+          d={ healthyArc() }
           fill={ this.props.highlight ? this.props.highlightStrokeColor : '#97be8c' }
           fillOpacity=".75">
         </path>
-      )
-    }
-  }
-
-  renderLevelLabels = () => {
-    const levels = d3.range(1, (this.props.levels + 1)).reverse();
-    return (
-      <g>
-        {levels.map((level, i) => {
-          return (
-            <text
-              key={ level }
-              x="4"
-              y={ (-level * this.radius / this.props.levels) }
-              dy=".35em"
-              fontSize="10px"
-              fill="#737373">
-              { this.Format(this.maxValue * level / this.props.levels) }
-            </text>
-          )
-        })}
       </g>
     )
   }
 
-  renderAxesParts = () => {
+  renderAxisLabels = () => {
     return (
       <g>
         {this.allAxis.map((axis, i) => {
           return (
             <g key={ axis }>
               {
-                this.props.axes ?
-                  <line
-                    x1={ this.scaleRadial(0) * Math.cos(this.angleSlice * i - Math.PI / 2) }
-                    y1={ this.scaleRadial(0) * Math.sin(this.angleSlice * i - Math.PI / 2) }
-                    x2={ this.scaleRadial(this.maxValue) * Math.cos(this.angleSlice * i - Math.PI / 2) }
-                    y2={ this.scaleRadial(this.maxValue) * Math.sin(this.angleSlice * i - Math.PI / 2) }
-                    stroke={ this.props.strokeColor }
-                    strokeWidth="1px">
-                  </line>
-                : null
-              }
-              {
                 this.props.axisLabel ?
                   <Text
-                    x={ this.scaleRadial(this.maxValue * this.props.labelOffset) * Math.cos(this.angleSlice * i - Math.PI / 2) }
-                    y={ this.scaleRadial(this.maxValue * this.props.labelOffset) * Math.sin(this.angleSlice * i - Math.PI / 2) }
+                    x={ this.scaleRadial(this.absoluteMax * this.props.labelOffset) * Math.cos(this.angleSlice * i - Math.PI / 2) }
+                    y={ this.scaleRadial(this.absoluteMax * this.props.labelOffset) * Math.sin(this.angleSlice * i - Math.PI / 2) }
                     dy=".35em"
                     fontSize="12px"
                     textAnchor="middle"
-                    width={ this.props.wrapWidth }>
+                    width={ this.props.axisLabelWrapWidth }>
                     { axis }
                   </Text>
                 : null
@@ -225,9 +213,8 @@ class SpiderChart extends Component {
   renderAxes = () => {
     return (
       <g>
-        { this.props.levels > 0 ? this.renderLevels() : null }
-        { this.props.levelLabel ? this.renderLevelLabels() : null }
-        { this.props.axes || this.props.axisLabel ? this.renderAxesParts() : null }
+        { this.renderThreshold() }
+        { this.props.axisLabel ? this.renderAxisLabels() : null }
       </g>
     )
   }
@@ -257,7 +244,7 @@ class SpiderChart extends Component {
                         color={ d.color }
                         points={ this.assemblePointsData(d) }
                         areaOpacity={ this.props.areaOpacity }
-                        strokeWidth={ this.props.type === CONSTANTS.hgraph ? 0 : this.props.strokeWidth }
+                        strokeWidth={ 0 }
                         pointRadius={ this.props.pointRadius }
                         scoreEnabled={ true }
                         score={ d.score }
@@ -266,7 +253,7 @@ class SpiderChart extends Component {
                         scoreColor={ this.props.scoreColor }
                         isActive={ d.id === this.state.activeNodeId }
                         onClick={ this.handlePolygonClick(d) }
-                        />
+                      />
                     )
                   })
                 }
@@ -278,4 +265,4 @@ class SpiderChart extends Component {
   }
 }
 
-export default SpiderChart;
+export default HGraph;
